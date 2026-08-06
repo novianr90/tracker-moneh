@@ -6,7 +6,8 @@ export const authService = {
 			email,
 			password
 		});
-		if (error) throw error;
+    if (error) throw error;
+    console.log("data: " + JSON.stringify(data));
 		return data;
 	},
 

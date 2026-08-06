@@ -2,7 +2,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { supabase } from '$lib/services/supabase';
 	import { authService } from '$lib/services/auth';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -10,24 +10,14 @@
 
 	export let data;
 
-	let currentUser = data?.user || null;
-
-	$: currentUser = data?.user || currentUser;
+	$: currentUser = data.user;
 
 	onMount(() => {
-		// Sync local auth state & listen for session changes
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			if (session?.user) {
-				currentUser = session.user;
-			}
-		});
-
 		const {
 			data: { subscription }
-		} = supabase.auth.onAuthStateChange(async (event, session) => {
-			currentUser = session?.user || null;
-			if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-				await invalidateAll();
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			if (session?.expires_at !== data.session?.expires_at) {
+				invalidate('supabase:auth');
 			}
 		});
 
@@ -55,8 +45,7 @@
 	async function handleSignOut() {
 		try {
 			await authService.signOut();
-			currentUser = null;
-			await invalidateAll();
+			await invalidate('supabase:auth');
 			goto('/auth');
 		} catch (e) {
 			console.error('Sign out error:', e);
