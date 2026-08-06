@@ -2,7 +2,7 @@
 
 **Project:** Personal Expense Tracker  
 **Status:** Living Document  
-**Base Specs:** [PRD-Personal-Expense-Tracker.md](file:///D:/Code/projects/tracker-moneh/docs/PRD-Personal-Expense-Tracker.md), [TECHNICAL-SPECIFICATION.md](file:///D:/Code/projects/tracker-moneh/docs/TECHNICAL-SPECIFICATION.md)
+**Base Specs:** [PRD-Personal-Expense-Tracker.md](PRD-Personal-Expense-Tracker.md), [TECHNICAL-SPECIFICATION.md](TECHNICAL-SPECIFICATION.md)
 
 ---
 

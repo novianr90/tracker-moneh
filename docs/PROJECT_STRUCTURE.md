@@ -2,7 +2,7 @@
 
 **Version:** 0.1  
 **Status:** Approved Specification  
-**Base Docs:** [TECHNICAL-SPECIFICATION.md](file:///D:/Code/projects/tracker-moneh/docs/TECHNICAL-SPECIFICATION.md), [README.md](file:///D:/Code/projects/tracker-moneh/README.md)
+**Base Docs:** [TECHNICAL-SPECIFICATION.md](TECHNICAL-SPECIFICATION.md), [README.md](../README.md)
 
 ---
 

@@ -2,8 +2,8 @@
 
 **Version:** 0.4  
 **Status:** Approved Architectural Spec  
-**Base PRD:** [PRD-Personal-Expense-Tracker.md](file:///D:/Code/projects/tracker-moneh/docs/PRD-Personal-Expense-Tracker.md)  
-**Architecture Decisions:** [DECISIONS.md](file:///D:/Code/projects/tracker-moneh/docs/DECISIONS.md)
+**Base PRD:** [PRD-Personal-Expense-Tracker.md](PRD-Personal-Expense-Tracker.md)  
+**Architecture Decisions:** [DECISIONS.md](DECISIONS.md)
 
 ---
 
@@ -179,7 +179,7 @@ stateDiagram-v2
   - `get_monthly_category_breakdown(p_month)`
   - `get_recent_transactions(p_limit)`
 
-*(Full DDL and parameters documented in [DATABASE.md](file:///D:/Code/projects/tracker-moneh/docs/DATABASE.md))*
+*(Full DDL and parameters documented in [DATABASE.md](DATABASE.md))*
 
 ---
 

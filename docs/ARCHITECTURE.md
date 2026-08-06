@@ -2,7 +2,7 @@
 
 **Version:** 0.1  
 **Status:** Approved Specification  
-**Base Specs:** [TECHNICAL-SPECIFICATION.md](file:///D:/Code/projects/tracker-moneh/docs/TECHNICAL-SPECIFICATION.md), [DATABASE.md](file:///D:/Code/projects/tracker-moneh/docs/DATABASE.md), [DECISIONS.md](file:///D:/Code/projects/tracker-moneh/docs/DECISIONS.md)
+**Base Specs:** [TECHNICAL-SPECIFICATION.md](TECHNICAL-SPECIFICATION.md), [DATABASE.md](DATABASE.md), [DECISIONS.md](DECISIONS.md)
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Version:** 0.2  
 **Status:** Approved Architectural Spec  
-**Base Docs:** [PRD-Personal-Expense-Tracker.md](file:///D:/Code/projects/tracker-moneh/docs/PRD-Personal-Expense-Tracker.md), [TECHNICAL-SPECIFICATION.md](file:///D:/Code/projects/tracker-moneh/docs/TECHNICAL-SPECIFICATION.md), [DATABASE.md](file:///D:/Code/projects/tracker-moneh/docs/DATABASE.md), [DECISIONS.md](file:///D:/Code/projects/tracker-moneh/docs/DECISIONS.md)
+**Base Docs:** [PRD-Personal-Expense-Tracker.md](PRD-Personal-Expense-Tracker.md), [TECHNICAL-SPECIFICATION.md](TECHNICAL-SPECIFICATION.md), [DATABASE.md](DATABASE.md), [DECISIONS.md](DECISIONS.md)
 
 ---
 

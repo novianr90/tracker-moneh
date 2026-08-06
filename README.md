@@ -1,4 +1,4 @@
-# Personal Expense Tracker
+# Personal Expense Tracker (TrackerMoneh)
 
 A lightweight, high-performance personal expense tracker built for private use (2 users: owner and spouse). Focuses on rapid expense entry (< 10s goal) on mobile and desktop web, backed by Supabase and reporting to Google Spreadsheet.
 
@@ -11,20 +11,23 @@ A lightweight, high-performance personal expense tracker built for private use (
                      │
                      ▼
              SvelteKit Web App
- (shadcn-svelte + Tailwind + TanStack Query)
+    (SvelteKit 2 + @supabase/ssr)
                      │
                      ▼
            Supabase Platform
    ┌─────────────────────────────────┐
    │ - PostgreSQL (bigint currency)  │
-   │ - Auth (Email/Password)         │
+   │ - Auth (@supabase/ssr Cookies)  │
    │ - RPCs & Views                  │
    │ - Row Level Security (RLS)      │
    │ - Edge Function (Sync)          │
    └────────────────┬────────────────┘
+                    │ (API Key Auth)
+                    ▼
+        Google Apps Script Web App
                     │
                     ▼
-          Google Spreadsheet API v4
+          Google Spreadsheet
      (Reporting & Monthly Review)
 ```
 
@@ -32,21 +35,21 @@ A lightweight, high-performance personal expense tracker built for private use (
 
 ## Features (MVP)
 
-- **Authentication:** Email & Password login via Supabase Auth (Public registration disabled).
+- **SSR & Cookie Authentication:** Secure auth using `@supabase/ssr` server-side session cookies & reactive SvelteKit state invalidation.
 - **Rapid Expense Capture:** Add expense entries in under 10 seconds.
 - **Dynamic Categories:** Custom categories with icons and color tags.
-- **Dashboard:** Instant spending aggregates via server-side database RPCs.
-- **Google Spreadsheet Sync:** One-way reconciliation with soft-delete marking (`[DELETED]`).
+- **Dashboard:** Instant spending aggregates via server-side database RPCs and metric summary cards.
+- **Google Spreadsheet Sync:** One-way manual reconciliation to Google Sheets via Supabase Edge Function & Google Apps Script Web App with API Key protection.
 
 ---
 
 ## Tech Stack
 
-- **Frontend Framework:** [SvelteKit](https://kit.svelte.dev/)
-- **UI Components & Styling:** [shadcn-svelte](https://shadcn-svelte.com/), Tailwind CSS, Lucide Icons
+- **Frontend Framework:** [SvelteKit 2](https://kit.svelte.dev/) (Svelte 4)
+- **UI Components & Styling:** Tailwind CSS, Lucide Icons
 - **State & Data Fetching:** [TanStack Query (Svelte)](https://tanstack.com/query/latest)
-- **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL, Auth, Edge Functions, RLS)
-- **Reporting Target:** Google Spreadsheet API v4
+- **Backend & Auth:** [Supabase](https://supabase.com/) (`@supabase/ssr`, PostgreSQL, RLS, Edge Functions)
+- **Reporting Target:** Google Spreadsheet via Google Apps Script Web App
 
 ---
 
@@ -80,7 +83,7 @@ To prevent scope creep, the MVP explicitly does **NOT** support:
 2. **Configure Environment Variables:**
    Copy `.env.example` to `.env`:
    ```env
-   PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+   PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
    PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    ENABLE_SYNC=true
    ENABLE_DEBUG=false
@@ -107,13 +110,14 @@ To prevent scope creep, the MVP explicitly does **NOT** support:
 
 ## Documentation Index
 
-Detailed architectural specs and guidelines:
+Detailed architectural specs and setup guidelines:
 
-- 📋 [PRD-Personal-Expense-Tracker.md](file:///D:/Code/projects/tracker-moneh/docs/PRD-Personal-Expense-Tracker.md) — Product Requirements Document
-- 📐 [TECHNICAL-SPECIFICATION.md](file:///D:/Code/projects/tracker-moneh/docs/TECHNICAL-SPECIFICATION.md) — System & Service Layer Technical Spec
-- 🗄️ [DATABASE.md](file:///D:/Code/projects/tracker-moneh/docs/DATABASE.md) — PostgreSQL Schema, RLS, Views, & RPC Specs
-- 🧱 [ARCHITECTURE.md](file:///D:/Code/projects/tracker-moneh/docs/ARCHITECTURE.md) — Visual Architecture Diagrams & Data Flows
-- 📁 [PROJECT_STRUCTURE.md](file:///D:/Code/projects/tracker-moneh/docs/PROJECT_STRUCTURE.md) — Directory Layout & Code Responsibility Guidelines
-- ⚡ [SUPABASE_SETUP.md](file:///D:/Code/projects/tracker-moneh/docs/SUPABASE_SETUP.md) — Supabase CLI, Migrations, & Secrets Setup
-- 🚀 [DEPLOYMENT.md](file:///D:/Code/projects/tracker-moneh/docs/DEPLOYMENT.md) — Deployment Sequence & Recovery Procedures
-- ⚖️ [DECISIONS.md](file:///D:/Code/projects/tracker-moneh/docs/DECISIONS.md) — Architecture Decision Records (ADRs)
+- 📋 [PRD-Personal-Expense-Tracker.md](docs/PRD-Personal-Expense-Tracker.md) — Product Requirements Document
+- 📐 [TECHNICAL-SPECIFICATION.md](docs/TECHNICAL-SPECIFICATION.md) — System & Service Layer Technical Spec
+- 🗄️ [DATABASE.md](docs/DATABASE.md) — PostgreSQL Schema, RLS, Views, & RPC Specs
+- 🧱 [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Visual Architecture Diagrams & Data Flows
+- 📁 [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) — Directory Layout & Code Responsibility Guidelines
+- ⚡ [SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) — Supabase CLI, Migrations, & Secrets Setup
+- 📊 [SPREADSHEET.md](docs/SPREADSHEET.md) — Google Sheets & Apps Script Sync Setup Guide
+- 🚀 [DEPLOYMENT.md](docs/DEPLOYMENT.md) — Deployment Sequence & Recovery Procedures
+- ⚖️ [DECISIONS.md](docs/DECISIONS.md) — Architecture Decision Records (ADRs)

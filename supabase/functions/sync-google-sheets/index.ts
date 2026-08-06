@@ -20,7 +20,7 @@ serve(async (req: Request) => {
 	}
 
 	const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-	const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+	const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_PUBLISHABLE_KEY') || '';
 	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		global: { headers: { Authorization: authHeader } },
 	});
@@ -60,12 +60,37 @@ serve(async (req: Request) => {
 
 		const count = expenses?.length || 0;
 
-		// Simulated Google Sheets API Sync execution
-		// In production environment:
-		// 1. Authenticate with GOOGLE_SERVICE_ACCOUNT_EMAIL & GOOGLE_PRIVATE_KEY
-		// 2. Fetch target sheet range using GOOGLE_SPREADSHEET_ID
-		// 3. Reconcile rows using expense.id
-		// 4. Mark deleted items with [DELETED] prefix & strikethrough format
+		const googleScriptUrl = Deno.env.get('GOOGLE_SCRIPT_URL');
+		const spreadsheetApiKey = Deno.env.get('SPREADSHEET_API_KEY');
+
+		let syncDetails = { syncedCount: count };
+
+		// Call Google Apps Script Web App if secrets are configured
+		if (googleScriptUrl && spreadsheetApiKey) {
+			const gasResponse = await fetch(googleScriptUrl, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					apiKey: spreadsheetApiKey,
+					action: 'syncExpenses',
+					data: (expenses || []).map((exp: any) => ({
+						...exp,
+						user_email: user.email
+					}))
+				}),
+				redirect: 'follow'
+			});
+
+			const gasResult = await gasResponse.json();
+
+			if (!gasResponse.ok || gasResult.status === 'error') {
+				throw new Error(gasResult.message || `Google Apps Script returned status ${gasResponse.status}`);
+			}
+
+			syncDetails = { ...syncDetails, ...gasResult };
+		} else {
+			console.warn('GOOGLE_SCRIPT_URL or SPREADSHEET_API_KEY missing. Execution logged in dry-run mode.');
+		}
 
 		const finishedAt = new Date().toISOString();
 
@@ -84,7 +109,8 @@ serve(async (req: Request) => {
 			JSON.stringify({
 				status: 'success',
 				syncedCount: count,
-				finishedAt
+				finishedAt,
+				details: syncDetails
 			}),
 			{
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
