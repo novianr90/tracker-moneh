@@ -30,5 +30,15 @@ export const syncService = {
 
 		if (error) throw error;
 		return data || [];
+	},
+
+	async getActiveCronJobs(): Promise<{ jobid: number; jobname: string; schedule: string; active: boolean }[]> {
+		try {
+			const { data, error } = await (supabase as any).rpc('get_cron_jobs');
+			if (error) return [];
+			return data || [];
+		} catch {
+			return [];
+		}
 	}
 };

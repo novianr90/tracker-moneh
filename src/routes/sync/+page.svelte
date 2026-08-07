@@ -5,17 +5,23 @@
 	import { RefreshCw, CheckCircle2, XCircle, Clock, FileSpreadsheet, Loader2, AlertCircle } from 'lucide-svelte';
 
 	let syncLogs: SyncLog[] = [];
+	let cronJobs: { jobid: number; jobname: string; schedule: string; active: boolean }[] = [];
 	let loading = true;
 	let syncing = false;
 	let statusMsg = '';
 	let errorMsg = '';
 
-	async function loadLogs() {
+	async function loadData() {
 		loading = true;
 		try {
-			syncLogs = await syncService.getSyncLogs();
+			const [logs, jobs] = await Promise.all([
+				syncService.getSyncLogs(),
+				syncService.getActiveCronJobs()
+			]);
+			syncLogs = logs;
+			cronJobs = jobs;
 		} catch (err: any) {
-			console.error('Failed loading sync logs:', err);
+			console.error('Failed loading sync data:', err);
 		} finally {
 			loading = false;
 		}
@@ -29,7 +35,7 @@
 		try {
 			const res = await syncService.triggerGoogleSheetsSync();
 			statusMsg = `Successfully synced ${res.syncedCount} expenses to Google Spreadsheet!`;
-			await loadLogs();
+			await loadData();
 		} catch (err: any) {
 			errorMsg = err.message || 'SYNC003: Edge Function sync failed';
 		} finally {
@@ -38,7 +44,7 @@
 	}
 
 	onMount(() => {
-		loadLogs();
+		loadData();
 	});
 </script>
 
@@ -94,60 +100,52 @@
 		</button>
 	</div>
 
-	<!-- Scheduled Auto-Sync Settings Card -->
+	<!-- Live Scheduled Cron Job Status Card -->
 	<div class="p-6 bg-card border border-border rounded-xl shadow-sm space-y-4">
-		<div class="flex items-start justify-between">
+		<div class="flex items-center justify-between">
 			<div class="space-y-1">
 				<h2 class="text-md font-bold text-foreground flex items-center gap-2">
 					<Clock class="w-5 h-5 text-primary" />
-					Automated Scheduled Sync (Cron Job)
+					Scheduled Auto-Sync Status
 				</h2>
-				<p class="text-xs text-muted-foreground max-w-xl">
-					Automatically runs in the background via Supabase Edge Function <span class="font-mono text-xs text-primary">scheduled-sync-google-sheets</span>.
+				<p class="text-xs text-muted-foreground">
+					Live background schedule status fetched directly from database <code class="text-primary font-mono">cron.job</code>
 				</p>
 			</div>
+			{#if cronJobs.length > 0}
+				<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+					<CheckCircle2 class="w-4 h-4" /> Active Cron Schedule
+				</span>
+			{:else}
+				<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+					<Clock class="w-4 h-4" /> Manual Sync Only
+				</span>
+			{/if}
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-			<div class="p-3.5 bg-secondary/30 border border-border rounded-lg space-y-1">
-				<div class="text-xs font-bold text-foreground">Every 6 Hours</div>
-				<div class="text-[11px] font-mono text-muted-foreground">0 */6 * * *</div>
-				<p class="text-[11px] text-muted-foreground pt-1">Ideal for frequent spenders tracking expenses throughout the day.</p>
+		{#if cronJobs.length > 0}
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+				{#each cronJobs as job}
+					<div class="p-3.5 bg-secondary/30 border border-border rounded-lg space-y-1.5">
+						<div class="flex items-center justify-between">
+							<span class="text-xs font-bold text-foreground">{job.jobname || 'Scheduled Job'}</span>
+							<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+								Active
+							</span>
+						</div>
+						<div class="text-xs text-muted-foreground flex items-center gap-2">
+							<span>Frequency Schedule:</span>
+							<code class="px-2 py-0.5 bg-background border border-border rounded font-mono text-[11px] text-primary">{job.schedule}</code>
+						</div>
+					</div>
+				{/each}
 			</div>
-			<div class="p-3.5 bg-primary/10 border border-primary/30 rounded-lg space-y-1">
-				<div class="text-xs font-bold text-primary flex items-center gap-1">
-					Daily at Midnight <span class="px-1.5 py-0.2 rounded bg-primary text-[10px] text-primary-foreground">Recommended</span>
-				</div>
-				<div class="text-[11px] font-mono text-muted-foreground">0 0 * * *</div>
-				<p class="text-[11px] text-muted-foreground pt-1">Syncs all un-uploaded transactions every night automatically.</p>
+		{:else}
+			<div class="p-3.5 bg-secondary/30 border border-border rounded-lg text-xs text-muted-foreground flex items-center justify-between">
+				<span>No active background schedule found in <code class="text-primary font-mono">cron.job</code>. Sync runs manually on demand.</span>
+				<span class="text-[11px] text-muted-foreground">See <code class="text-primary font-mono">SCHEDULED.md</code> for setup instructions.</span>
 			</div>
-			<div class="p-3.5 bg-secondary/30 border border-border rounded-lg space-y-1">
-				<div class="text-xs font-bold text-foreground">Weekly on Monday</div>
-				<div class="text-[11px] font-mono text-muted-foreground">0 0 * * 1</div>
-				<p class="text-[11px] text-muted-foreground pt-1">Syncs accumulated weekly transactions every Monday at midnight.</p>
-			</div>
-		</div>
-
-		<div class="p-3 bg-secondary/50 border border-border rounded-lg text-xs text-muted-foreground space-y-2">
-			<p class="font-bold text-foreground">💡 How to enable Scheduled Auto-Sync in Supabase:</p>
-			<p>Run this SQL snippet in your <b>Supabase SQL Editor</b> to enable <code class="text-primary font-mono">pg_cron</code> for automatic background syncs:</p>
-			<pre class="p-2 bg-background border border-border rounded font-mono text-[11px] text-foreground overflow-x-auto">
--- Enable pg_cron and pg_net extensions
-create extension if not exists pg_cron;
-create extension if not exists pg_net;
-
--- Schedule automatic sync every day at 00:00 UTC
-select cron.schedule(
-  'daily-google-sheets-sync',
-  '0 0 * * *',
-  $$
-  select net.http_post(
-    url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/scheduled-sync-google-sheets',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
-  );
-  $$
-);</pre>
-		</div>
+		{/if}
 	</div>
 
 	<!-- Audit Log History -->
