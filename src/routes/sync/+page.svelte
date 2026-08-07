@@ -94,6 +94,62 @@
 		</button>
 	</div>
 
+	<!-- Scheduled Auto-Sync Settings Card -->
+	<div class="p-6 bg-card border border-border rounded-xl shadow-sm space-y-4">
+		<div class="flex items-start justify-between">
+			<div class="space-y-1">
+				<h2 class="text-md font-bold text-foreground flex items-center gap-2">
+					<Clock class="w-5 h-5 text-primary" />
+					Automated Scheduled Sync (Cron Job)
+				</h2>
+				<p class="text-xs text-muted-foreground max-w-xl">
+					Automatically runs in the background via Supabase Edge Function <span class="font-mono text-xs text-primary">scheduled-sync-google-sheets</span>.
+				</p>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+			<div class="p-3.5 bg-secondary/30 border border-border rounded-lg space-y-1">
+				<div class="text-xs font-bold text-foreground">Every 6 Hours</div>
+				<div class="text-[11px] font-mono text-muted-foreground">0 */6 * * *</div>
+				<p class="text-[11px] text-muted-foreground pt-1">Ideal for frequent spenders tracking expenses throughout the day.</p>
+			</div>
+			<div class="p-3.5 bg-primary/10 border border-primary/30 rounded-lg space-y-1">
+				<div class="text-xs font-bold text-primary flex items-center gap-1">
+					Daily at Midnight <span class="px-1.5 py-0.2 rounded bg-primary text-[10px] text-primary-foreground">Recommended</span>
+				</div>
+				<div class="text-[11px] font-mono text-muted-foreground">0 0 * * *</div>
+				<p class="text-[11px] text-muted-foreground pt-1">Syncs all un-uploaded transactions every night automatically.</p>
+			</div>
+			<div class="p-3.5 bg-secondary/30 border border-border rounded-lg space-y-1">
+				<div class="text-xs font-bold text-foreground">Weekly on Monday</div>
+				<div class="text-[11px] font-mono text-muted-foreground">0 0 * * 1</div>
+				<p class="text-[11px] text-muted-foreground pt-1">Syncs accumulated weekly transactions every Monday at midnight.</p>
+			</div>
+		</div>
+
+		<div class="p-3 bg-secondary/50 border border-border rounded-lg text-xs text-muted-foreground space-y-2">
+			<p class="font-bold text-foreground">💡 How to enable Scheduled Auto-Sync in Supabase:</p>
+			<p>Run this SQL snippet in your <b>Supabase SQL Editor</b> to enable <code class="text-primary font-mono">pg_cron</code> for automatic background syncs:</p>
+			<pre class="p-2 bg-background border border-border rounded font-mono text-[11px] text-foreground overflow-x-auto">
+-- Enable pg_cron and pg_net extensions
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+-- Schedule automatic sync every day at 00:00 UTC
+select cron.schedule(
+  'daily-google-sheets-sync',
+  '0 0 * * *',
+  $$
+  select net.http_post(
+    url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/scheduled-sync-google-sheets',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
+  );
+  $$
+);</pre>
+		</div>
+	</div>
+
 	<!-- Audit Log History -->
 	<div class="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
 		<div class="flex items-center justify-between">

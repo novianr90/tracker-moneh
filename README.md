@@ -119,5 +119,6 @@ Detailed architectural specs and setup guidelines:
 - 📁 [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) — Directory Layout & Code Responsibility Guidelines
 - ⚡ [SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) — Supabase CLI, Migrations, & Secrets Setup
 - 📊 [SPREADSHEET.md](docs/SPREADSHEET.md) — Google Sheets & Apps Script Sync Setup Guide
+- ⏰ [SCHEDULED.md](docs/SCHEDULED.md) — Automated Background Sync (`pg_cron`) Guide
 - 🚀 [DEPLOYMENT.md](docs/DEPLOYMENT.md) — Deployment Sequence & Recovery Procedures
 - ⚖️ [DECISIONS.md](docs/DECISIONS.md) — Architecture Decision Records (ADRs)
