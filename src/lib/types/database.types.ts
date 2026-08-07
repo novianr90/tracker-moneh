@@ -43,7 +43,7 @@ export interface Database {
           amount: number
           description: string
           expense_date: string
-          is_upload: boolean
+          is_upload: string
           created_at: string
           updated_at: string
         }
@@ -54,7 +54,7 @@ export interface Database {
           amount: number
           description?: string
           expense_date?: string
-          is_upload?: boolean
+          is_upload?: string
           created_at?: string
           updated_at?: string
         }
@@ -65,7 +65,7 @@ export interface Database {
           amount?: number
           description?: string
           expense_date?: string
-          is_upload?: boolean
+          is_upload?: string
           created_at?: string
           updated_at?: string
         }
@@ -111,7 +111,7 @@ export interface Database {
           amount: number
           description: string
           expense_date: string
-          is_upload: boolean
+          is_upload: string
           category_name: string
           category_color: string
           category_icon: string

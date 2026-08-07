@@ -172,7 +172,7 @@
 								<td class="p-3 text-muted-foreground max-w-xs truncate">{item.description || '-'}</td>
 								<td class="p-3 font-bold text-right whitespace-nowrap">{formatIDR(item.amount)}</td>
 								<td class="p-3 text-center whitespace-nowrap">
-									{#if item.is_upload}
+									{#if item.is_upload === 'Y'}
 										<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
 											Synced
 										</span>

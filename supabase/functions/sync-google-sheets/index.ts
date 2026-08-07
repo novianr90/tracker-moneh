@@ -40,6 +40,9 @@ serve(async (req: Request) => {
 		global: { headers: { Authorization: authHeader } },
 	});
 
+	const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+	const dbClient = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : supabase;
+
 	// Verify User
 	const { data: { user }, error: userError } = await supabase.auth.getUser();
 	if (userError || !user) {
@@ -50,7 +53,7 @@ serve(async (req: Request) => {
 	}
 
 	// Create Sync Log Entry (in_progress)
-	const { data: syncLog, error: logError } = await supabase
+	const { data: syncLog, error: logError } = await dbClient
 		.from('sync_logs')
 		.insert({
 			user_id: user.id,
@@ -65,12 +68,12 @@ serve(async (req: Request) => {
 	}
 
 	try {
-		// Fetch Pending (Un-uploaded) User Expenses
+		// Fetch Pending (Un-uploaded) User Expenses (is_upload is null or 'N' / not 'Y')
 		const { data: expenses, error: expenseError } = await supabase
 			.from('recent_expenses')
 			.select('*')
 			.eq('user_id', user.id)
-			.eq('is_upload', false);
+			.neq('is_upload', 'Y');
 
 		if (expenseError) throw expenseError;
 
@@ -109,16 +112,17 @@ serve(async (req: Request) => {
 				throw new Error(gasResult.message || `Google Apps Script returned status ${gasResponse.status}`);
 			}
 
-			// Update synced expenses set is_upload = true
+			// Update synced expenses set is_upload = 'Y'
 			const syncedIds = (expenses || []).map((exp: any) => exp.id);
 			if (syncedIds.length > 0) {
-				const { error: updateError } = await supabase
+				const { error: updateError } = await dbClient
 					.from('expenses')
-					.update({ is_upload: true })
+					.update({ is_upload: 'Y' })
 					.in('id', syncedIds);
 
 				if (updateError) {
-					console.error('Failed setting is_upload=true for synced expenses:', updateError);
+					console.error('Failed setting is_upload=Y for synced expenses:', updateError);
+					throw new Error(`Database update failed: ${updateError.message}`);
 				}
 			}
 
@@ -130,7 +134,7 @@ serve(async (req: Request) => {
 		const finishedAt = new Date().toISOString();
 
 		if (syncLog) {
-			await supabase
+			const { error: logUpdateErr } = await dbClient
 				.from('sync_logs')
 				.update({
 					status: 'success',
@@ -138,6 +142,10 @@ serve(async (req: Request) => {
 					finished_at: finishedAt
 				})
 				.eq('id', syncLog.id);
+
+			if (logUpdateErr) {
+				console.error('Failed updating sync_log status to success:', logUpdateErr);
+			}
 		}
 
 		return new Response(
@@ -156,7 +164,7 @@ serve(async (req: Request) => {
 		console.error('Sync execution failed:', err);
 
 		if (syncLog) {
-			await supabase
+			await dbClient
 				.from('sync_logs')
 				.update({
 					status: 'failed',
