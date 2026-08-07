@@ -20,7 +20,22 @@ serve(async (req: Request) => {
 	}
 
 	const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-	const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_PUBLISHABLE_KEY') || '';
+	const supabaseAnonKey =
+		Deno.env.get('SUPABASE_ANON_KEY') ||
+		Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') ||
+		Deno.env.get('PUBLIC_SUPABASE_PUBLISHABLE_KEY') ||
+		'';
+
+	if (!supabaseUrl || !supabaseAnonKey) {
+		return new Response(
+			JSON.stringify({ error: 'Supabase URL or Anon Key configuration missing in Edge Function environment.' }),
+			{
+				status: 500,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+			}
+		);
+	}
+
 	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		global: { headers: { Authorization: authHeader } },
 	});
@@ -50,11 +65,12 @@ serve(async (req: Request) => {
 	}
 
 	try {
-		// Fetch User Expenses
+		// Fetch Pending (Un-uploaded) User Expenses
 		const { data: expenses, error: expenseError } = await supabase
 			.from('recent_expenses')
 			.select('*')
-			.eq('user_id', user.id);
+			.eq('user_id', user.id)
+			.eq('is_upload', false);
 
 		if (expenseError) throw expenseError;
 
@@ -65,8 +81,10 @@ serve(async (req: Request) => {
 
 		let syncDetails = { syncedCount: count };
 
-		// Call Google Apps Script Web App if secrets are configured
-		if (googleScriptUrl && spreadsheetApiKey) {
+		if (count === 0) {
+			console.log('No pending transactions to upload.');
+		} else if (googleScriptUrl && spreadsheetApiKey) {
+			// Call Google Apps Script Web App
 			const gasResponse = await fetch(googleScriptUrl, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -74,7 +92,11 @@ serve(async (req: Request) => {
 					apiKey: spreadsheetApiKey,
 					action: 'syncExpenses',
 					data: (expenses || []).map((exp: any) => ({
-						...exp,
+						id: exp.id,
+						expense_date: exp.expense_date,
+						category_name: exp.category_name,
+						amount: exp.amount,
+						description: exp.description || '',
 						user_email: user.email
 					}))
 				}),
@@ -85,6 +107,19 @@ serve(async (req: Request) => {
 
 			if (!gasResponse.ok || gasResult.status === 'error') {
 				throw new Error(gasResult.message || `Google Apps Script returned status ${gasResponse.status}`);
+			}
+
+			// Update synced expenses set is_upload = true
+			const syncedIds = (expenses || []).map((exp: any) => exp.id);
+			if (syncedIds.length > 0) {
+				const { error: updateError } = await supabase
+					.from('expenses')
+					.update({ is_upload: true })
+					.in('id', syncedIds);
+
+				if (updateError) {
+					console.error('Failed setting is_upload=true for synced expenses:', updateError);
+				}
 			}
 
 			syncDetails = { ...syncDetails, ...gasResult };

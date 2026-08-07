@@ -156,6 +156,7 @@
 							<th class="p-3">Category</th>
 							<th class="p-3">Description</th>
 							<th class="p-3 text-right">Amount</th>
+							<th class="p-3 text-center">Status</th>
 							<th class="p-3 text-center">Actions</th>
 						</tr>
 					</thead>
@@ -170,6 +171,17 @@
 								</td>
 								<td class="p-3 text-muted-foreground max-w-xs truncate">{item.description || '-'}</td>
 								<td class="p-3 font-bold text-right whitespace-nowrap">{formatIDR(item.amount)}</td>
+								<td class="p-3 text-center whitespace-nowrap">
+									{#if item.is_upload}
+										<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+											Synced
+										</span>
+									{:else}
+										<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+											Pending
+										</span>
+									{/if}
+								</td>
 								<td class="p-3 text-center whitespace-nowrap">
 									<button
 										on:click={() => handleDelete(item.id)}
