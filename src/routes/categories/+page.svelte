@@ -12,7 +12,12 @@
 	let newIcon = 'tag';
 	let errorMsg = '';
 
-	const presetColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b'];
+	const presetColors = [
+		'#ef4444', '#f97316', '#f59e0b', '#10b981', '#14b8a6',
+		'#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7',
+		'#ec4899', '#f43f5e', '#64748b', '#78716c'
+	];
+
 
 	async function loadCategories() {
 		loading = true;
@@ -104,15 +109,23 @@
 				<span class="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
 					<Palette class="w-3.5 h-3.5" /> Color Tag
 				</span>
-				<div class="flex items-center gap-1.5 pt-1">
+				<div class="flex items-center gap-1.5 pt-1 flex-wrap">
 					{#each presetColors as color}
 						<button
 							type="button"
 							on:click={() => (newColor = color)}
-							class="w-6 h-6 rounded-full transition-transform {newColor === color ? 'scale-125 ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:scale-110'}"
+							class="w-5 h-5 rounded-full transition-transform {newColor === color ? 'scale-125 ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:scale-110'}"
 							style="background-color: {color};"
 						></button>
 					{/each}
+					<label title="Custom Color" class="relative cursor-pointer w-5 h-5 rounded-full border border-border flex items-center justify-center overflow-hidden hover:scale-110 transition-transform">
+						<input
+							type="color"
+							bind:value={newColor}
+							class="absolute -top-2 -left-2 w-8 h-8 cursor-pointer opacity-0"
+						/>
+						<span class="w-full h-full rounded-full" style="background-color: {newColor};"></span>
+					</label>
 				</div>
 			</div>
 
