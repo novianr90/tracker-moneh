@@ -171,6 +171,16 @@ export interface Database {
         }
         Returns: Database['public']['Views']['recent_expenses']['Row'][]
       }
+      get_daily_expense_trends: {
+        Args: {
+          p_month?: string
+        }
+        Returns: {
+          expense_date: string
+          daily_total: number
+          cumulative_total: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

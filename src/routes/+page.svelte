@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import ExpenseForm from '$lib/components/forms/ExpenseForm.svelte';
 	import SummaryCards from '$lib/components/dashboard/SummaryCards.svelte';
+	import ExpenseTrendChart from '$lib/components/dashboard/ExpenseTrendChart.svelte';
 	import CategoryChart from '$lib/components/dashboard/CategoryChart.svelte';
 	import RecentTransactions from '$lib/components/dashboard/RecentTransactions.svelte';
 	import { expenseService, type MonthlySummary, type CategoryBreakdown, type RecentExpenseView } from '$lib/services/expenses';
@@ -49,6 +50,9 @@
 
 	<!-- Metrics Summary Cards -->
 	<SummaryCards {summary} />
+
+	<!-- Interactive Daily Expense Trend Analytics -->
+	<ExpenseTrendChart />
 
 	<!-- Grid Section: Breakdown & Feed -->
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-6">

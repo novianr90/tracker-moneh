@@ -20,6 +20,12 @@ export interface CategoryBreakdown {
 	total_amount: number;
 }
 
+export interface DailyTrendPoint {
+	expense_date: string;
+	daily_total: number;
+	cumulative_total: number;
+}
+
 export interface ExpenseFilters {
 	startDate?: string;
 	endDate?: string;
@@ -137,5 +143,18 @@ export const expenseService = {
 
 		if (error) throw error;
 		return data || [];
+	},
+
+	async getDailyExpenseTrends(month?: string): Promise<DailyTrendPoint[]> {
+		const { data, error } = await (supabase as any).rpc('get_daily_expense_trends', {
+			p_month: month
+		});
+
+		if (error) throw error;
+		return (data || []).map((row: any) => ({
+			expense_date: row.expense_date,
+			daily_total: Number(row.daily_total),
+			cumulative_total: Number(row.cumulative_total)
+		}));
 	}
 };
