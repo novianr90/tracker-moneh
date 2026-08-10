@@ -32,13 +32,28 @@ export interface ExpenseFilters {
 	categoryId?: string;
 	paymentMethod?: string;
 	searchKey?: string;
+	page?: number;
+	pageSize?: number;
+}
+
+export interface PaginatedExpenses {
+	data: RecentExpenseView[];
+	totalCount: number;
+	page: number;
+	pageSize: number;
+	totalPages: number;
 }
 
 export const expenseService = {
-	async getExpenses(filters?: ExpenseFilters): Promise<RecentExpenseView[]> {
+	async getExpenses(filters?: ExpenseFilters): Promise<PaginatedExpenses> {
+		const page = filters?.page && filters.page > 0 ? filters.page : 1;
+		const pageSize = filters?.pageSize && filters.pageSize > 0 ? filters.pageSize : 25;
+		const from = (page - 1) * pageSize;
+		const to = from + pageSize - 1;
+
 		let query = (supabase
 			.from('recent_expenses') as any)
-			.select('*')
+			.select('*', { count: 'exact' })
 			.order('expense_date', { ascending: false });
 
 		if (filters?.startDate) {
@@ -57,9 +72,21 @@ export const expenseService = {
 			query = query.ilike('description', `%${filters.searchKey}%`);
 		}
 
-		const { data, error } = await query;
+		query = query.range(from, to);
+
+		const { data, error, count } = await query;
 		if (error) throw error;
-		return data || [];
+
+		const totalCount = count || 0;
+		const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+		return {
+			data: data || [],
+			totalCount,
+			page,
+			pageSize,
+			totalPages
+		};
 	},
 
 	async createExpense(payload: Omit<InsertExpense, 'user_id'>): Promise<Expense> {
