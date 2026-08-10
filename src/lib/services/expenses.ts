@@ -88,6 +88,17 @@ export const expenseService = {
 			throw new Error('EXP002: Expense amount must be greater than 0');
 		}
 
+		// Prevent editing expenses that are already synced to Google Sheets
+		const { data: existing } = await (supabase
+			.from('expenses') as any)
+			.select('is_upload')
+			.eq('id', id)
+			.maybeSingle();
+
+		if (existing?.is_upload === 'Y') {
+			throw new Error('EXP003: Cannot edit an expense that has already been synced to Google Sheets');
+		}
+
 		const { data, error } = await (supabase
 			.from('expenses') as any)
 			.update(payload)

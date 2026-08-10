@@ -4,7 +4,7 @@
 	import { categoryService, type Category } from '$lib/services/categories';
 	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
 	import { formatIDR, formatDate } from '$lib/utils/formatters';
-	import { Receipt, Search, Filter, Trash2, Calendar, FileSpreadsheet } from 'lucide-svelte';
+	import { Receipt, Search, Filter, Trash2, Pencil, Check, X, Loader2, Calendar, FileSpreadsheet } from 'lucide-svelte';
 
 	let expenses: RecentExpenseView[] = [];
 	let categories: Category[] = [];
@@ -17,6 +17,17 @@
 	let paymentMethodFilter = '';
 	let startDate = '';
 	let endDate = '';
+
+	// Inline Edit State
+	let editingId: string | null = null;
+	let savingId: string | null = null;
+	let editForm = {
+		expense_date: '',
+		category_id: '',
+		payment_method: 'Cash',
+		amount: 0,
+		description: ''
+	};
 
 	async function loadData() {
 		loading = true;
@@ -42,8 +53,60 @@
 		}
 	}
 
-	async function handleDelete(id: string) {
-		if (!confirm('Are you sure you want to delete this expense?')) return;
+	function handleStartEdit(item: RecentExpenseView) {
+		if (item.is_upload === 'Y') {
+			alert('Expenses that have already been synced to Google Sheets cannot be edited.');
+			return;
+		}
+		const matchedCat = categories.find((c) => c.name === item.category_name);
+		editingId = item.id;
+		editForm = {
+			expense_date: item.expense_date,
+			category_id: matchedCat ? matchedCat.id : (item as any).category_id || (categories[0]?.id ?? ''),
+			payment_method: item.payment_method || 'Cash',
+			amount: item.amount,
+			description: item.description || ''
+		};
+	}
+
+	function handleCancelEdit() {
+		editingId = null;
+	}
+
+	async function handleSaveEdit(id: string) {
+		if (editForm.amount <= 0) {
+			alert('Amount must be greater than 0');
+			return;
+		}
+		if (!editForm.category_id) {
+			alert('Please select a category');
+			return;
+		}
+
+		savingId = id;
+		try {
+			await expenseService.updateExpense(id, {
+				expense_date: editForm.expense_date,
+				category_id: editForm.category_id,
+				payment_method: editForm.payment_method,
+				amount: editForm.amount,
+				description: editForm.description.trim()
+			});
+			editingId = null;
+			await loadData();
+		} catch (err: any) {
+			alert('Failed to save expense edit: ' + (err.message || err));
+		} finally {
+			savingId = null;
+		}
+	}
+
+	async function handleDelete(id: string, isSynced: boolean = false) {
+		const confirmMessage = isSynced
+			? 'Transaksi ini sudah di-sync ke Google Sheet. Menghapusnya akan menandai transaksi tersebut sebagai [DELETED] (dicoret) pada sync berikutnya.\n\nYakin ingin menghapus?'
+			: 'Apakah Anda yakin ingin menghapus transaksi ini?';
+
+		if (!confirm(confirmMessage)) return;
 		try {
 			await expenseService.deleteExpense(id);
 			await loadData();
@@ -79,7 +142,7 @@
 				<Receipt class="w-6 h-6 text-primary" />
 				Expense History
 			</h1>
-			<p class="text-xs text-muted-foreground">Filter, search, and manage all your logged expenses</p>
+			<p class="text-xs text-muted-foreground">Filter, search, edit, and manage all your logged expenses</p>
 		</div>
 
 		<button
@@ -183,41 +246,149 @@
 					</thead>
 					<tbody class="divide-y divide-border">
 						{#each expenses as item}
-							<tr class="hover:bg-muted/30 transition-colors">
-								<td class="p-3 font-medium whitespace-nowrap">{formatDate(item.expense_date)}</td>
-								<td class="p-3 whitespace-nowrap">
-									<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold text-white" style="background-color: {item.category_color || '#6b7280'};">
-										{item.category_name}
-									</span>
-								</td>
-								<td class="p-3 whitespace-nowrap">
-									<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-foreground border border-border">
-										{item.payment_method || 'Cash'}
-									</span>
-								</td>
-								<td class="p-3 text-muted-foreground max-w-xs truncate">{item.description || '-'}</td>
-								<td class="p-3 font-bold text-right whitespace-nowrap">{formatIDR(item.amount)}</td>
-								<td class="p-3 text-center whitespace-nowrap">
-									{#if item.is_upload === 'Y'}
-										<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-											Synced
+							{#if editingId === item.id}
+								<!-- EDIT MODE ROW -->
+								<tr class="bg-primary/5 border-l-4 border-l-primary transition-colors">
+									<!-- Date Input -->
+									<td class="p-2 whitespace-nowrap">
+										<input
+											type="date"
+											bind:value={editForm.expense_date}
+											class="px-2 py-1 bg-background border border-input rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+										/>
+									</td>
+
+									<!-- Category Input -->
+									<td class="p-2 whitespace-nowrap">
+										<select
+											bind:value={editForm.category_id}
+											class="px-2 py-1 bg-background border border-input rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+										>
+											{#each categories as cat}
+												<option value={cat.id}>{cat.name}</option>
+											{/each}
+										</select>
+									</td>
+
+									<!-- Payment Method Input -->
+									<td class="p-2 whitespace-nowrap">
+										<select
+											bind:value={editForm.payment_method}
+											class="px-2 py-1 bg-background border border-input rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+										>
+											{#each paymentMethodsList as pm}
+												<option value={pm.name}>{pm.name}</option>
+											{/each}
+										</select>
+									</td>
+
+									<!-- Description Input -->
+									<td class="p-2">
+										<input
+											type="text"
+											bind:value={editForm.description}
+											placeholder="Description..."
+											class="w-full px-2 py-1 bg-background border border-input rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+										/>
+									</td>
+
+									<!-- Amount Input -->
+									<td class="p-2 text-right whitespace-nowrap">
+										<input
+											type="number"
+											bind:value={editForm.amount}
+											min="1"
+											class="w-28 text-right px-2 py-1 bg-background border border-input rounded text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+										/>
+									</td>
+
+									<!-- Status (Read-only) -->
+									<td class="p-3 text-center whitespace-nowrap">
+										{#if item.is_upload === 'Y'}
+											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+												Synced
+											</span>
+										{:else}
+											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+												Pending
+											</span>
+										{/if}
+									</td>
+
+									<!-- Save / Cancel Actions -->
+									<td class="p-3 text-center whitespace-nowrap">
+										<div class="flex items-center justify-center gap-1">
+											<button
+												on:click={() => handleSaveEdit(item.id)}
+												disabled={savingId === item.id}
+												title="Save"
+												class="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md transition-colors disabled:opacity-50"
+											>
+												{#if savingId === item.id}
+													<Loader2 class="w-4 h-4 animate-spin" />
+												{:else}
+													<Check class="w-4 h-4" />
+												{/if}
+											</button>
+											<button
+												on:click={handleCancelEdit}
+												disabled={savingId === item.id}
+												title="Cancel"
+												class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50"
+											>
+												<X class="w-4 h-4" />
+											</button>
+										</div>
+									</td>
+								</tr>
+							{:else}
+								<!-- READ-ONLY ROW -->
+								<tr class="hover:bg-muted/30 transition-colors">
+									<td class="p-3 font-medium whitespace-nowrap">{formatDate(item.expense_date)}</td>
+									<td class="p-3 whitespace-nowrap">
+										<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold text-white" style="background-color: {item.category_color || '#6b7280'};">
+											{item.category_name}
 										</span>
-									{:else}
-										<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-											Pending
+									</td>
+									<td class="p-3 whitespace-nowrap">
+										<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-foreground border border-border">
+											{item.payment_method || 'Cash'}
 										</span>
-									{/if}
-								</td>
-								<td class="p-3 text-center whitespace-nowrap">
-									<button
-										on:click={() => handleDelete(item.id)}
-										title="Delete"
-										class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-									>
-										<Trash2 class="w-4 h-4" />
-									</button>
-								</td>
-							</tr>
+									</td>
+									<td class="p-3 text-muted-foreground max-w-xs truncate">{item.description || '-'}</td>
+									<td class="p-3 font-bold text-right whitespace-nowrap">{formatIDR(item.amount)}</td>
+									<td class="p-3 text-center whitespace-nowrap">
+										{#if item.is_upload === 'Y'}
+											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+												Synced
+											</span>
+										{:else}
+											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+												Pending
+											</span>
+										{/if}
+									</td>
+									<td class="p-3 text-center whitespace-nowrap">
+										<div class="flex items-center justify-center gap-1">
+											<button
+												on:click={() => handleStartEdit(item)}
+												disabled={item.is_upload === 'Y'}
+												title={item.is_upload === 'Y' ? 'Synced expenses cannot be edited' : 'Edit Expense'}
+												class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
+											>
+												<Pencil class="w-4 h-4" />
+											</button>
+											<button
+												on:click={() => handleDelete(item.id, item.is_upload === 'Y')}
+												title="Delete Expense"
+												class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+											>
+												<Trash2 class="w-4 h-4" />
+											</button>
+										</div>
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					</tbody>
 				</table>
@@ -225,3 +396,4 @@
 		{/if}
 	</div>
 </div>
+
