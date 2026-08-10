@@ -46,6 +46,9 @@ export interface PaginatedExpenses {
 
 export const expenseService = {
 	async getExpenses(filters?: ExpenseFilters): Promise<PaginatedExpenses> {
+		const { data: { user } } = await supabase.auth.getUser();
+		if (!user) throw new Error('AUTH002: User unauthenticated');
+
 		const page = filters?.page && filters.page > 0 ? filters.page : 1;
 		const pageSize = filters?.pageSize && filters.pageSize > 0 ? filters.pageSize : 25;
 		const from = (page - 1) * pageSize;
@@ -54,6 +57,7 @@ export const expenseService = {
 		let query = (supabase
 			.from('recent_expenses') as any)
 			.select('*', { count: 'exact' })
+			.eq('user_id', user.id)
 			.order('expense_date', { ascending: false });
 
 		if (filters?.startDate) {
