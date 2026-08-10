@@ -83,3 +83,26 @@
 - **Consequences:**
   - Frontend receives pre-calculated JSON payloads in a single network request.
   - Aggregations execute at database speed leveraging PostgreSQL indexes.
+
+---
+
+## ADR-008: Payment Method & Dynamic User Wallet Management
+
+- **Status:** Accepted
+- **Context:** Users manage transactions across cash, e-wallets, and multiple bank accounts. Categorizing expenses only by spend type without tracking payment channels limits financial clarity and reconciliation accuracy.
+- **Decision:** Add `payment_method` tagging to `expenses` records and Google Sheets sync payload, backed by a user-isolated `payment_methods` master table with auto-provisioned defaults (`Cash`, `QRIS`, `Credit Card`, `GoPay/OVO`, `Bank Transfer`) and custom user wallet creation.
+- **Consequences:**
+  - Users can filter expense history and export CSVs by payment channel.
+  - Google Sheets exports reflect payment channel for reconciliation.
+  - Users can create custom e-wallets and bank payment methods seamlessly.
+
+---
+
+## ADR-009: Interactive Daily Spending Velocity & Trend Analytics
+
+- **Status:** Accepted
+- **Context:** Monthly totals alone do not reveal daily spending velocity or peak expense days. Client-side iteration over raw transactions for chart generation is inefficient.
+- **Decision:** Encapsulate daily spend aggregation and running cumulative totals in a dedicated database RPC function (`get_daily_expense_trends`) returning zero-filled date series, rendered via an interactive SVG velocity chart on the dashboard.
+- **Consequences:**
+  - Single database query yields complete daily and cumulative velocity series.
+  - High-performance interactive chart rendering with Month-over-Month comparison support.
