@@ -24,6 +24,7 @@ export interface ExpenseFilters {
 	startDate?: string;
 	endDate?: string;
 	categoryId?: string;
+	paymentMethod?: string;
 	searchKey?: string;
 }
 
@@ -42,6 +43,9 @@ export const expenseService = {
 		}
 		if (filters?.categoryId) {
 			query = query.eq('category_name', filters.categoryId);
+		}
+		if (filters?.paymentMethod) {
+			query = query.eq('payment_method', filters.paymentMethod);
 		}
 		if (filters?.searchKey) {
 			query = query.ilike('description', `%${filters.searchKey}%`);

@@ -2,33 +2,39 @@
 	import { onMount } from 'svelte';
 	import { expenseService, type RecentExpenseView } from '$lib/services/expenses';
 	import { categoryService, type Category } from '$lib/services/categories';
+	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
 	import { formatIDR, formatDate } from '$lib/utils/formatters';
 	import { Receipt, Search, Filter, Trash2, Calendar, FileSpreadsheet } from 'lucide-svelte';
 
 	let expenses: RecentExpenseView[] = [];
 	let categories: Category[] = [];
+	let paymentMethodsList: PaymentMethodItem[] = [];
 	let loading = true;
 
 	// Filter state
 	let searchKey = '';
 	let categoryId = '';
+	let paymentMethodFilter = '';
 	let startDate = '';
 	let endDate = '';
 
 	async function loadData() {
 		loading = true;
 		try {
-			const [expData, catData] = await Promise.all([
+			const [expData, catData, pmData] = await Promise.all([
 				expenseService.getExpenses({
 					searchKey: searchKey || undefined,
 					categoryId: categoryId || undefined,
+					paymentMethod: paymentMethodFilter || undefined,
 					startDate: startDate || undefined,
 					endDate: endDate || undefined
 				}),
-				categoryService.getCategories()
+				categoryService.getCategories(),
+				paymentMethodService.getPaymentMethods()
 			]);
 			expenses = expData;
 			categories = catData;
+			paymentMethodsList = pmData;
 		} catch (err: any) {
 			console.error('Failed loading expenses:', err);
 		} finally {
@@ -48,8 +54,8 @@
 
 	function handleExportCSV() {
 		if (expenses.length === 0) return;
-		const headers = ['Date', 'Category', 'Amount', 'Description'];
-		const rows = expenses.map((e) => [e.expense_date, e.category_name, e.amount, `"${e.description || ''}"`]);
+		const headers = ['Date', 'Category', 'Payment Method', 'Amount', 'Description'];
+		const rows = expenses.map((e) => [e.expense_date, e.category_name, e.payment_method || 'Cash', e.amount, `"${e.description || ''}"`]);
 		const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 		const encodedUri = encodeURI(csvContent);
 		const link = document.createElement('a');
@@ -92,7 +98,7 @@
 			<Filter class="w-4 h-4 text-primary" /> Filter Transactions
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
 			<!-- Keyword Search -->
 			<div class="relative">
 				<Search class="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
@@ -115,6 +121,20 @@
 					<option value="">All Categories</option>
 					{#each categories as cat}
 						<option value={cat.name}>{cat.name}</option>
+					{/each}
+				</select>
+			</div>
+
+			<!-- Payment Method Filter -->
+			<div>
+				<select
+					bind:value={paymentMethodFilter}
+					on:change={loadData}
+					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+				>
+					<option value="">All Payment Methods</option>
+					{#each paymentMethodsList as pm}
+						<option value={pm.name}>{pm.name}</option>
 					{/each}
 				</select>
 			</div>
@@ -154,6 +174,7 @@
 						<tr>
 							<th class="p-3">Date</th>
 							<th class="p-3">Category</th>
+							<th class="p-3">Payment Method</th>
 							<th class="p-3">Description</th>
 							<th class="p-3 text-right">Amount</th>
 							<th class="p-3 text-center">Status</th>
@@ -167,6 +188,11 @@
 								<td class="p-3 whitespace-nowrap">
 									<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold text-white" style="background-color: {item.category_color || '#6b7280'};">
 										{item.category_name}
+									</span>
+								</td>
+								<td class="p-3 whitespace-nowrap">
+									<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-secondary text-foreground border border-border">
+										{item.payment_method || 'Cash'}
 									</span>
 								</td>
 								<td class="p-3 text-muted-foreground max-w-xs truncate">{item.description || '-'}</td>

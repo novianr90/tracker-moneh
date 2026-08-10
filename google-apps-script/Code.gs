@@ -30,18 +30,20 @@ function doPost(e) {
           'Transaction ID',
           'Date',
           'Category',
+          'Payment Method',
           'Amount (IDR)',
           'Description',
           'User Email',
           'Synced At'
         ]);
-        sheet.getRange(1, 1, 1, 7).setFontWeight('bold');
+        sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
       }
 
       const rowsToAppend = (data || []).map(item => [
         item.id,
         item.expense_date,
         item.category_name,
+        item.payment_method || 'Cash',
         item.amount,
         item.description || '',
         item.user_email || '',
@@ -50,7 +52,7 @@ function doPost(e) {
 
       if (rowsToAppend.length > 0) {
         const lastRow = sheet.getLastRow();
-        sheet.getRange(lastRow + 1, 1, rowsToAppend.length, 7).setValues(rowsToAppend);
+        sheet.getRange(lastRow + 1, 1, rowsToAppend.length, 8).setValues(rowsToAppend);
       }
 
       return ContentService.createTextOutput(

@@ -33,8 +33,11 @@
 							{item.category_name?.charAt(0) || 'E'}
 						</div>
 						<div>
-							<div class="text-sm font-semibold text-foreground">
+							<div class="text-sm font-semibold text-foreground flex items-center gap-2">
 								{item.category_name}
+								<span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border">
+									{item.payment_method || 'Cash'}
+								</span>
 							</div>
 							<div class="text-xs text-muted-foreground">
 								{item.description || 'No description'} • {formatDate(item.expense_date)}

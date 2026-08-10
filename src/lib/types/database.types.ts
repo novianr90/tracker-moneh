@@ -43,6 +43,7 @@ export interface Database {
           amount: number
           description: string
           expense_date: string
+          payment_method: string
           is_upload: string
           created_at: string
           updated_at: string
@@ -54,6 +55,7 @@ export interface Database {
           amount: number
           description?: string
           expense_date?: string
+          payment_method?: string
           is_upload?: string
           created_at?: string
           updated_at?: string
@@ -65,6 +67,7 @@ export interface Database {
           amount?: number
           description?: string
           expense_date?: string
+          payment_method?: string
           is_upload?: string
           created_at?: string
           updated_at?: string
@@ -102,6 +105,26 @@ export interface Database {
           created_at?: string
         }
       }
+      payment_methods: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       recent_expenses: {
@@ -111,6 +134,7 @@ export interface Database {
           amount: number
           description: string
           expense_date: string
+          payment_method: string
           is_upload: string
           category_name: string
           category_color: string

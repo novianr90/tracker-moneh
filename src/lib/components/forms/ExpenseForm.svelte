@@ -12,21 +12,48 @@
 
 	export let onSuccess: (() => void) | undefined = undefined;
 
+	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
+
 	let amount = '';
 	let categoryId = '';
+	let paymentMethod = 'Cash';
 	let description = '';
 	let expenseDate = getTodayISODate();
+
+	let paymentMethodItems: PaymentMethodItem[] = [];
+	let isAddingCustomMethod = false;
+	let customMethodName = '';
+	let savingCustomMethod = false;
 
 	let categories: Category[] = [];
 	let loading = false;
 	let errorMsg = '';
 	let successMsg = false;
 
+	async function loadPaymentMethods() {
+		try {
+			paymentMethodItems = await paymentMethodService.getPaymentMethods();
+			if (paymentMethodItems.length > 0 && !paymentMethodItems.some((item) => item.name === paymentMethod)) {
+				paymentMethod = paymentMethodItems[0].name;
+			}
+		} catch (e) {
+			console.error('Failed fetching payment methods:', e);
+		}
+	}
+
 	onMount(async () => {
 		try {
-			categories = await categoryService.getCategories();
+			const [catData, pmData] = await Promise.all([
+				categoryService.getCategories(),
+				paymentMethodService.getPaymentMethods()
+			]);
+			categories = catData;
 			if (categories.length > 0) {
 				categoryId = categories[0].id;
+			}
+			paymentMethodItems = pmData;
+			if (paymentMethodItems.length > 0) {
+				paymentMethod = paymentMethodItems[0].name;
 			}
 		} catch (e: any) {
 			// Fallback mock categories if DB empty in dev
@@ -39,6 +66,32 @@
 			if (categories.length > 0) categoryId = categories[0].id;
 		}
 	});
+
+	function handlePaymentMethodSelectChange(e: Event) {
+		const target = e.target as HTMLSelectElement;
+		if (target.value === '__NEW_CUSTOM__') {
+			isAddingCustomMethod = true;
+		} else {
+			isAddingCustomMethod = false;
+			paymentMethod = target.value;
+		}
+	}
+
+	async function handleSaveCustomMethod() {
+		if (!customMethodName.trim()) return;
+		savingCustomMethod = true;
+		try {
+			const newItem = await paymentMethodService.createPaymentMethod(customMethodName.trim());
+			await loadPaymentMethods();
+			paymentMethod = newItem.name;
+			isAddingCustomMethod = false;
+			customMethodName = '';
+		} catch (err: any) {
+			errorMsg = err.message || 'Failed to save custom payment method';
+		} finally {
+			savingCustomMethod = false;
+		}
+	}
 
 	async function handleSubmit() {
 		errorMsg = '';
@@ -60,6 +113,7 @@
 			await expenseService.createExpense({
 				amount: parsedAmount,
 				category_id: categoryId,
+				payment_method: paymentMethod,
 				description: description.trim(),
 				expense_date: expenseDate
 			});
@@ -67,6 +121,7 @@
 			// Reset form for rapid entry (<10s goal)
 			amount = '';
 			description = '';
+			paymentMethod = 'Cash';
 			successMsg = true;
 
 			setTimeout(() => {
@@ -136,6 +191,49 @@
 			</select>
 		</div>
 
+		<!-- Payment Method Selector -->
+		<div>
+			<label for="payment-method-select" class="block text-xs font-medium text-muted-foreground mb-1">Payment Method</label>
+			{#if isAddingCustomMethod}
+				<div class="flex items-center gap-1.5">
+					<input
+						type="text"
+						placeholder="New method name..."
+						bind:value={customMethodName}
+						class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+					/>
+					<button
+						type="button"
+						on:click={handleSaveCustomMethod}
+						disabled={savingCustomMethod}
+						class="px-3 py-2 bg-primary text-primary-foreground font-semibold text-xs rounded-lg hover:bg-primary/90 disabled:opacity-50"
+					>
+						Add
+					</button>
+					<button
+						type="button"
+						on:click={() => (isAddingCustomMethod = false)}
+						class="px-2 py-2 text-muted-foreground text-xs hover:text-foreground"
+					>
+						Cancel
+					</button>
+				</div>
+			{:else}
+				<select
+					id="payment-method-select"
+					bind:value={paymentMethod}
+					on:change={handlePaymentMethodSelectChange}
+					required
+					class="w-full px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
+				>
+					{#each paymentMethodItems as pm}
+						<option value={pm.name}>{pm.name}</option>
+					{/each}
+					<option value="__NEW_CUSTOM__">+ Add Custom Payment Method...</option>
+				</select>
+			{/if}
+		</div>
+
 		<!-- Date Selector -->
 		<div>
 			<label for="expense-date" class="block text-xs font-medium text-muted-foreground mb-1">Date</label>
@@ -149,7 +247,7 @@
 		</div>
 
 		<!-- Description Input -->
-		<div>
+		<div class="md:col-span-2">
 			<label for="description-input" class="block text-xs font-medium text-muted-foreground mb-1">Description (Optional)</label>
 			<input
 				id="description-input"

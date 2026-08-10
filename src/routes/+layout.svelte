@@ -6,7 +6,7 @@
 	import { supabase } from '$lib/services/supabase';
 	import { authService } from '$lib/services/auth';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
-	import { Wallet, LayoutDashboard, Receipt, Tag, RefreshCw, LogOut, LogIn } from 'lucide-svelte';
+	import { Wallet, LayoutDashboard, Receipt, Tag, CreditCard, RefreshCw, LogOut, LogIn } from 'lucide-svelte';
 
 	export let data;
 
@@ -39,6 +39,7 @@
 		{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
 		{ href: '/expenses', label: 'Expenses', icon: Receipt },
 		{ href: '/categories', label: 'Categories', icon: Tag },
+		{ href: '/payment-methods', label: 'Payment Methods', icon: CreditCard },
 		{ href: '/sync', label: 'Sync & Logs', icon: RefreshCw }
 	];
 

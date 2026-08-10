@@ -106,6 +106,7 @@ create table public.expenses (
     category_id uuid not null references public.categories(id) on delete restrict,
     amount bigint not null check (amount > 0),
     description text default '',
+    payment_method text default 'Cash',
     expense_date date not null default current_date,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
@@ -215,6 +216,7 @@ select
     e.amount,
     e.description,
     e.expense_date,
+    coalesce(e.payment_method, 'Cash') as payment_method,
     c.name as category_name,
     c.color as category_color,
     c.icon as category_icon

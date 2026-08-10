@@ -92,6 +92,7 @@ serve(async (req: Request) => {
 							id: exp.id,
 							expense_date: exp.expense_date,
 							category_name: exp.category_name,
+							payment_method: exp.payment_method || 'Cash',
 							amount: exp.amount,
 							description: exp.description || '',
 							user_email: userEmail
