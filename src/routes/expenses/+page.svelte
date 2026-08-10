@@ -4,7 +4,7 @@
 	import { categoryService, type Category } from '$lib/services/categories';
 	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
 	import { formatIDR, formatDate } from '$lib/utils/formatters';
-	import { Receipt, Search, Filter, Trash2, Pencil, Check, X, Loader2, Calendar, FileSpreadsheet } from 'lucide-svelte';
+	import { Receipt, Search, Filter, Trash2, Pencil, Check, X, Loader2, Calendar, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-svelte';
 
 	let expenses: RecentExpenseView[] = [];
 	let categories: Category[] = [];
@@ -17,6 +17,12 @@
 	let paymentMethodFilter = '';
 	let startDate = '';
 	let endDate = '';
+
+	// Pagination state
+	let page = 1;
+	let pageSize = 25;
+	let totalCount = 0;
+	let totalPages = 1;
 
 	// Inline Edit State
 	let editingId: string | null = null;
@@ -32,18 +38,24 @@
 	async function loadData() {
 		loading = true;
 		try {
-			const [expData, catData, pmData] = await Promise.all([
+			const [paginatedRes, catData, pmData] = await Promise.all([
 				expenseService.getExpenses({
 					searchKey: searchKey || undefined,
 					categoryId: categoryId || undefined,
 					paymentMethod: paymentMethodFilter || undefined,
 					startDate: startDate || undefined,
-					endDate: endDate || undefined
+					endDate: endDate || undefined,
+					page,
+					pageSize
 				}),
 				categoryService.getCategories(),
 				paymentMethodService.getPaymentMethods()
 			]);
-			expenses = expData;
+			expenses = paginatedRes.data;
+			totalCount = paginatedRes.totalCount;
+			totalPages = paginatedRes.totalPages;
+			page = paginatedRes.page;
+			pageSize = paginatedRes.pageSize;
 			categories = catData;
 			paymentMethodsList = pmData;
 		} catch (err: any) {
@@ -51,6 +63,24 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function handleFilterChange() {
+		page = 1;
+		loadData();
+	}
+
+	function handlePageChange(newPage: number) {
+		if (newPage >= 1 && newPage <= totalPages) {
+			page = newPage;
+			loadData();
+		}
+	}
+
+	function handlePageSizeChange(newSize: number) {
+		pageSize = newSize;
+		page = 1;
+		loadData();
 	}
 
 	function handleStartEdit(item: RecentExpenseView) {
@@ -169,7 +199,7 @@
 					type="text"
 					placeholder="Search description..."
 					bind:value={searchKey}
-					on:input={loadData}
+					on:input={handleFilterChange}
 					class="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				/>
 			</div>
@@ -178,7 +208,7 @@
 			<div>
 				<select
 					bind:value={categoryId}
-					on:change={loadData}
+					on:change={handleFilterChange}
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				>
 					<option value="">All Categories</option>
@@ -192,7 +222,7 @@
 			<div>
 				<select
 					bind:value={paymentMethodFilter}
-					on:change={loadData}
+					on:change={handleFilterChange}
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				>
 					<option value="">All Payment Methods</option>
@@ -207,7 +237,7 @@
 				<input
 					type="date"
 					bind:value={startDate}
-					on:change={loadData}
+					on:change={handleFilterChange}
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				/>
 			</div>
@@ -217,7 +247,7 @@
 				<input
 					type="date"
 					bind:value={endDate}
-					on:change={loadData}
+					on:change={handleFilterChange}
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				/>
 			</div>
@@ -393,6 +423,61 @@
 					</tbody>
 				</table>
 			</div>
+
+			<!-- Pagination Bar -->
+			{#if totalCount > 0}
+				<div class="px-4 py-3 bg-secondary/30 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+					<div class="flex items-center gap-1.5">
+						<span>Showing</span>
+						<span class="font-bold text-foreground">
+							{Math.min((page - 1) * pageSize + 1, totalCount)}–{Math.min(page * pageSize, totalCount)}
+						</span>
+						<span>of</span>
+						<span class="font-bold text-foreground">{totalCount}</span>
+						<span>expenses</span>
+					</div>
+
+					<div class="flex items-center gap-4">
+						<div class="flex items-center gap-1.5">
+							<span>Per page:</span>
+							<select
+								bind:value={pageSize}
+								on:change={() => handlePageSizeChange(pageSize)}
+								class="px-2 py-1 bg-background border border-input rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+							>
+								<option value={10}>10</option>
+								<option value={25}>25</option>
+								<option value={50}>50</option>
+								<option value={100}>100</option>
+							</select>
+						</div>
+
+						<div class="flex items-center gap-1.5">
+							<button
+								on:click={() => handlePageChange(page - 1)}
+								disabled={page <= 1}
+								title="Previous Page"
+								class="p-1.5 bg-background border border-input hover:bg-secondary rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								<ChevronLeft class="w-4 h-4" />
+							</button>
+
+							<span class="px-2 font-medium text-foreground">
+								Page {page} of {totalPages}
+							</span>
+
+							<button
+								on:click={() => handlePageChange(page + 1)}
+								disabled={page >= totalPages}
+								title="Next Page"
+								class="p-1.5 bg-background border border-input hover:bg-secondary rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								<ChevronRight class="w-4 h-4" />
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
