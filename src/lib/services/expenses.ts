@@ -36,9 +36,13 @@ export interface ExpenseFilters {
 
 export const expenseService = {
 	async getExpenses(filters?: ExpenseFilters): Promise<RecentExpenseView[]> {
+		const { data: { user } } = await supabase.auth.getUser();
+		if (!user) throw new Error('AUTH002: User unauthenticated');
+
 		let query = (supabase
 			.from('recent_expenses') as any)
 			.select('*')
+			.eq('user_id', user.id)
 			.order('expense_date', { ascending: false });
 
 		if (filters?.startDate) {
