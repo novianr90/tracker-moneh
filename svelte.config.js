@@ -1,5 +1,5 @@
 import adapterNode from '@sveltejs/adapter-node';
-import adapterAuto from '@sveltejs/adapter-auto';
+import adapterVercel from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const isVercel = !!process.env.VERCEL;
@@ -8,7 +8,9 @@ const isVercel = !!process.env.VERCEL;
 const config = {
 	preprocess: vitePreprocess(),
 	kit: {
-		adapter: isVercel ? adapterAuto() : adapterNode(),
+		adapter: isVercel
+			? adapterVercel({ runtime: 'nodejs20.x' })
+			: adapterNode(),
 		alias: {
 			$lib: './src/lib'
 		}
