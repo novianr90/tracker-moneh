@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  tracker-moneh:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
+        PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY}
+        ENABLE_SYNC: ${ENABLE_SYNC:-true}
+        ENABLE_DEBUG: ${ENABLE_DEBUG:-false}
+    container_name: tracker-moneh
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    environment:
+      - PORT=${PORT:-3000}
+      - HOST=0.0.0.0
+      - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
+      - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
+      - ENABLE_SYNC=${ENABLE_SYNC:-true}
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+      - ORIGIN=${ORIGIN:-http://localhost:3000}
+    restart: unless-stopped
