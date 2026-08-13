@@ -107,3 +107,20 @@ supabase secrets set GOOGLE_SERVICE_ACCOUNT_EMAIL="..." GOOGLE_PRIVATE_KEY="..."
    - Migrations should always be additive.
    - If a rollback requires reverting schema changes, create a new compensating migration file (`supabase migration new revert_<feature>`) and apply via `supabase db push`.
    - Never manually drop production tables.
+
+---
+
+## 6. Coolify & Docker Deployment Guide
+
+### 6.1 Configuration in Coolify
+1. **New Resource:** Select **Public/Private Repository** or **Dockerfile** build pack.
+2. **Port:** Expose port `3000`.
+3. **Environment Variables & Build Arguments:**
+   - `PUBLIC_SUPABASE_URL`: Your Supabase project URL (e.g. `https://xxx.supabase.co`).
+   - `PUBLIC_SUPABASE_ANON_KEY`: Your Supabase public anon key.
+   - `ORIGIN`: The public HTTPS URL where your app is hosted (e.g. `https://moneh.yourdomain.com`).
+   - `ENABLE_SYNC`: `true`
+   - `ENABLE_DEBUG`: `false`
+
+*Note: In Coolify, ensure environment variables marked as build variables or passed as ARGs during image build.*
+
