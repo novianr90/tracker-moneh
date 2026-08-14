@@ -10,13 +10,11 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY . .
 
 # Build arguments for SvelteKit static public environment variables
-ARG PUBLIC_SUPABASE_URL
-ARG PUBLIC_SUPABASE_ANON_KEY
+ARG PUBLIC_GATEWAY_URL
 ARG ENABLE_SYNC
 ARG ENABLE_DEBUG
 
-ENV PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL
-ENV PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY
+ENV PUBLIC_GATEWAY_URL=$PUBLIC_GATEWAY_URL
 ENV ENABLE_SYNC=$ENABLE_SYNC
 ENV ENABLE_DEBUG=$ENABLE_DEBUG
 
@@ -27,8 +25,8 @@ RUN npm prune --production
 FROM node:22-alpine AS runner
 WORKDIR /app
 
-# Install curl for Coolify Healthcheck
-RUN apk add --no-cache curl
+# Install curl & wget for Coolify Healthchecks
+RUN apk add --no-cache curl wget
 
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
@@ -36,7 +34,9 @@ COPY --from=builder /app/package.json ./package.json
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ARG PORT=3000
+ARG PORT=3004
 ENV PORT=${PORT}
 
-CMD ["node", "build"]
+EXPOSE ${PORT}
+
+CMD ["node", "build/index.js"]

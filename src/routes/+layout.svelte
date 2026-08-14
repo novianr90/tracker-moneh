@@ -1,14 +1,24 @@
 <script lang="ts">
 	import '../app.css';
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { authService } from '$lib/services/auth';
+	import { currentUser, checkAuth } from '$lib/stores/auth';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { Wallet, LayoutDashboard, Receipt, Tag, CreditCard, RefreshCw, LogOut, LogIn } from 'lucide-svelte';
 
 	export let data;
 
-	$: currentUser = data.user;
+	$: user = $currentUser || data.user;
+
+	onMount(async () => {
+		if (data.user) {
+			currentUser.set(data.user);
+		} else {
+			await checkAuth();
+		}
+	});
 
 	const queryClient = new QueryClient({
 		defaultOptions: {
@@ -30,6 +40,7 @@
 	async function handleSignOut() {
 		try {
 			await authService.signOut();
+			currentUser.set(null);
 			await invalidateAll();
 			goto('/auth');
 		} catch (e) {
@@ -51,7 +62,7 @@
 				</a>
 
 				<!-- Desktop Navigation -->
-				{#if currentUser}
+				{#if user}
 					<nav class="hidden md:flex items-center gap-1">
 						{#each navItems as item}
 							{@const active = $page.url.pathname === item.href}
@@ -67,13 +78,13 @@
 				{/if}
 
 				<div class="flex items-center gap-3">
-					{#if currentUser}
+					{#if user}
 						<button
 							on:click={handleSignOut}
 							class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary hover:bg-destructive/20 hover:text-destructive-foreground text-foreground flex items-center gap-1.5 transition-colors"
 						>
 							<LogOut class="w-3.5 h-3.5" />
-							Sign Out ({currentUser.email?.split('@')[0]})
+							Sign Out ({user.email?.split('@')[0]})
 						</button>
 					{:else}
 						<a
@@ -94,16 +105,16 @@
 		</main>
 
 		<!-- Mobile Bottom Navigation Bar -->
-		{#if currentUser}
+		{#if user}
 			<nav class="md:hidden border-t border-border bg-card sticky bottom-0 z-40 px-2 py-2 flex items-center justify-around">
 				{#each navItems as item}
 					{@const active = $page.url.pathname === item.href}
 					<a
 						href={item.href}
-						class="flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {active ? 'text-primary font-bold' : 'text-muted-foreground'}"
+						class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition-colors {active ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}"
 					>
 						<svelte:component this={item.icon} class="w-5 h-5" />
-						<span>{item.label}</span>
+						{item.label}
 					</a>
 				{/each}
 			</nav>

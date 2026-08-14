@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { authService } from '$lib/services/auth';
+	import { currentUser } from '$lib/stores/auth';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { Wallet, LogIn, Loader2, Lock } from 'lucide-svelte';
 
@@ -18,7 +19,10 @@
 		loading = true;
 
 		try {
-			await authService.signIn(email, password);
+			const data = await authService.signIn(email, password);
+			if (data.user) {
+				currentUser.set(data.user);
+			}
 			await invalidateAll();
 			await goto('/');
 		} catch (err: any) {
@@ -73,21 +77,14 @@
 			<button
 				type="submit"
 				disabled={loading}
-				class="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50"
+				class="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
 			>
 				{#if loading}
-					<Loader2 class="w-5 h-5 animate-spin" />
-					Signing In...
+					<Loader2 class="w-4 h-4 animate-spin" /> Signing In...
 				{:else}
-					<LogIn class="w-5 h-5" />
-					Sign In
+					<Lock class="w-4 h-4" /> Sign In
 				{/if}
 			</button>
 		</form>
-
-		<div class="pt-4 border-t border-border text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-			<Lock class="w-3.5 h-3.5" />
-			<span>Private 2-user instance (Public registration disabled)</span>
-		</div>
 	</div>
 </div>
