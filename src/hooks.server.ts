@@ -6,10 +6,15 @@ const GATEWAY_URL = (env as any).PUBLIC_GATEWAY_URL || 'http://localhost:4000';
 export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.safeGetSession = async () => {
 		try {
-			const cookieHeader = event.request.headers.get('cookie') || '';
+			const token = event.cookies.get('sb-access-token');
+			if (!token) {
+				return { session: null, user: null };
+			}
+
 			const res = await event.fetch(`${GATEWAY_URL}/api/auth/me`, {
 				headers: {
-					cookie: cookieHeader
+					Authorization: `Bearer ${token}`,
+					cookie: `sb-access-token=${token}`
 				}
 			});
 			if (res.ok) {
@@ -26,12 +31,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.session = session;
 	event.locals.user = user;
 
-	// Mandatory Route Guard: Redirect all unauthenticated requests to /auth
-	if (!user && !event.url.pathname.startsWith('/auth')) {
+	// Route Guards: Allow /auth and /api/auth endpoints without redirect loop
+	const isAuthRoute = event.url.pathname.startsWith('/auth') || event.url.pathname.startsWith('/api/auth');
+
+	if (!user && !isAuthRoute) {
 		throw redirect(303, '/auth');
 	}
 
-	if (user && event.url.pathname.startsWith('/auth')) {
+	if (user && event.url.pathname === '/auth') {
 		throw redirect(303, '/');
 	}
 

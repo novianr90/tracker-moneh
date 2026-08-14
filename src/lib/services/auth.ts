@@ -1,26 +1,41 @@
-import { apiFetch } from './apiClient';
-
 export const authService = {
 	async signIn(email: string, password: string) {
-		return await apiFetch('/api/auth/login', {
+		const res = await fetch('/api/auth/login', {
 			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ email, password })
 		});
+		const data = await res.json();
+		if (!res.ok) {
+			throw new Error(data.error || 'Login failed');
+		}
+		return data;
 	},
 
 	async signOut() {
-		return await apiFetch('/api/auth/logout', {
+		const res = await fetch('/api/auth/logout', {
 			method: 'POST'
 		});
+		return await res.json();
 	},
 
 	async getSession() {
-		const res = await apiFetch('/api/auth/me');
-		return res.session;
+		try {
+			const res = await fetch('/api/auth/me');
+			const data = await res.json();
+			return data.session;
+		} catch {
+			return null;
+		}
 	},
 
 	async getUser() {
-		const res = await apiFetch('/api/auth/me');
-		return res.user;
+		try {
+			const res = await fetch('/api/auth/me');
+			const data = await res.json();
+			return data.user;
+		} catch {
+			return null;
+		}
 	}
 };
