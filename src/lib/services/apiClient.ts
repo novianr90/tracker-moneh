@@ -3,7 +3,7 @@ import * as env from '$env/static/public';
 export const GATEWAY_URL = (env as any).PUBLIC_GATEWAY_URL || 'http://localhost:4000';
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
-	const url = `${GATEWAY_URL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+	const url = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
 	const headers = new Headers(options.headers);
 
 	if (options.body && !headers.has('Content-Type')) {
