@@ -1,5 +1,3 @@
-import { apiFetch } from './apiClient';
-
 export interface AppConfig {
 	useActual: boolean;
 	version: string;
@@ -8,10 +6,13 @@ export interface AppConfig {
 export const configService = {
 	async getConfig(): Promise<AppConfig> {
 		try {
-			return await apiFetch('/api/config');
+			const res = await fetch('/api/config');
+			if (res.ok) {
+				return await res.json();
+			}
 		} catch (e) {
 			console.warn('Failed to load gateway config, defaulting to standalone:', e);
-			return { useActual: false, version: '1.0.0' };
 		}
+		return { useActual: false, version: '1.0.0' };
 	}
 };
