@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { authService } from '$lib/services/auth';
-	import { goto, invalidate } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { Wallet, LogIn, Loader2, Lock } from 'lucide-svelte';
 
 	let email = '';
@@ -19,7 +19,7 @@
 
 		try {
 			await authService.signIn(email, password);
-			await invalidate('supabase:auth');
+			await invalidateAll();
 			await goto('/');
 		} catch (err: any) {
 			errorMsg = err.message || 'AUTH001: Invalid email or password';

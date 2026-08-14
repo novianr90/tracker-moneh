@@ -1,30 +1,26 @@
-import { supabase } from './supabase';
+import { apiFetch } from './apiClient';
 
 export const authService = {
 	async signIn(email: string, password: string) {
-		const { data, error } = await supabase.auth.signInWithPassword({
-			email,
-			password
+		return await apiFetch('/api/auth/login', {
+			method: 'POST',
+			body: JSON.stringify({ email, password })
 		});
-    if (error) throw error;
-    console.log("data: " + JSON.stringify(data));
-		return data;
 	},
 
 	async signOut() {
-		const { error } = await supabase.auth.signOut();
-		if (error) throw error;
+		return await apiFetch('/api/auth/logout', {
+			method: 'POST'
+		});
 	},
 
 	async getSession() {
-		const { data, error } = await supabase.auth.getSession();
-		if (error) throw error;
-		return data.session;
+		const res = await apiFetch('/api/auth/me');
+		return res.session;
 	},
 
 	async getUser() {
-		const { data, error } = await supabase.auth.getUser();
-		if (error) throw error;
-		return data.user;
+		const res = await apiFetch('/api/auth/me');
+		return res.user;
 	}
 };

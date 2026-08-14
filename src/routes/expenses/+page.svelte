@@ -4,7 +4,24 @@
 	import { categoryService, type Category } from '$lib/services/categories';
 	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
 	import { formatIDR, formatDate } from '$lib/utils/formatters';
-	import { Receipt, Search, Filter, Trash2, Pencil, Check, X, Loader2, Calendar, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import {
+		Receipt,
+		Search,
+		Filter,
+		Trash2,
+		Pencil,
+		Check,
+		X,
+		Loader2,
+		Calendar,
+		FileSpreadsheet,
+		ChevronLeft,
+		ChevronRight,
+		RefreshCw,
+		CheckCircle2,
+		AlertTriangle,
+		Clock
+	} from 'lucide-svelte';
 
 	let expenses: RecentExpenseView[] = [];
 	let categories: Category[] = [];
@@ -27,6 +44,7 @@
 	// Inline Edit State
 	let editingId: string | null = null;
 	let savingId: string | null = null;
+	let retryingId: string | null = null;
 	let editForm = {
 		expense_date: '',
 		category_id: '',
@@ -108,11 +126,6 @@
 			alert('Amount must be greater than 0');
 			return;
 		}
-		if (!editForm.category_id) {
-			alert('Please select a category');
-			return;
-		}
-
 		savingId = id;
 		try {
 			await expenseService.updateExpense(id, {
@@ -125,30 +138,51 @@
 			editingId = null;
 			await loadData();
 		} catch (err: any) {
-			alert('Failed to save expense edit: ' + (err.message || err));
+			alert(err.message || 'Failed to update expense');
 		} finally {
 			savingId = null;
 		}
 	}
 
-	async function handleDelete(id: string, isSynced: boolean = false) {
-		const confirmMessage = isSynced
-			? 'Transaksi ini sudah di-sync ke Google Sheet. Menghapusnya akan menandai transaksi tersebut sebagai [DELETED] (dicoret) pada sync berikutnya.\n\nYakin ingin menghapus?'
-			: 'Apakah Anda yakin ingin menghapus transaksi ini?';
+	async function handleDelete(id: string, isUploaded: boolean) {
+		const warning = isUploaded
+			? 'This expense is already synced to Google Spreadsheet. Deleting it will mark it as [DELETED] on next Spreadsheet reconciliation. Continue?'
+			: 'Are you sure you want to delete this expense?';
 
-		if (!confirm(confirmMessage)) return;
+		if (!confirm(warning)) return;
+
 		try {
 			await expenseService.deleteExpense(id);
 			await loadData();
 		} catch (err: any) {
-			alert('Failed to delete expense: ' + err.message);
+			alert(err.message || 'Failed to delete expense');
+		}
+	}
+
+	async function handleRetry(id: string) {
+		retryingId = id;
+		try {
+			await expenseService.retryExpense(id);
+			await loadData();
+		} catch (err: any) {
+			alert(err.message || 'Failed to retry expense sync');
+		} finally {
+			retryingId = null;
 		}
 	}
 
 	function handleExportCSV() {
 		if (expenses.length === 0) return;
-		const headers = ['Date', 'Category', 'Payment Method', 'Amount', 'Description'];
-		const rows = expenses.map((e) => [e.expense_date, e.category_name, e.payment_method || 'Cash', e.amount, `"${e.description || ''}"`]);
+		const headers = ['Date', 'Category', 'Payment Method', 'Amount', 'Description', 'Actual Sync Status', 'Sheets Uploaded'];
+		const rows = expenses.map((e) => [
+			e.expense_date,
+			e.category_name,
+			e.payment_method || 'Cash',
+			e.amount,
+			`"${e.description || ''}"`,
+			e.sync_status || 'PENDING',
+			e.is_upload || 'N'
+		]);
 		const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 		const encodedUri = encodeURI(csvContent);
 		const link = document.createElement('a');
@@ -172,7 +206,7 @@
 				<Receipt class="w-6 h-6 text-primary" />
 				Expense History
 			</h1>
-			<p class="text-xs text-muted-foreground">Filter, search, edit, and manage all your logged expenses</p>
+			<p class="text-xs text-muted-foreground">Filter, search, edit, and observe synchronization with Actual Budget & Google Sheets</p>
 		</div>
 
 		<button
@@ -270,7 +304,8 @@
 							<th class="p-3">Payment Method</th>
 							<th class="p-3">Description</th>
 							<th class="p-3 text-right">Amount</th>
-							<th class="p-3 text-center">Status</th>
+							<th class="p-3 text-center">Actual Budget</th>
+							<th class="p-3 text-center">Sheets</th>
 							<th class="p-3 text-center">Actions</th>
 						</tr>
 					</thead>
@@ -332,17 +367,14 @@
 										/>
 									</td>
 
-									<!-- Status (Read-only) -->
+									<!-- Actual Budget Status (Read-only) -->
 									<td class="p-3 text-center whitespace-nowrap">
-										{#if item.is_upload === 'Y'}
-											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-												Synced
-											</span>
-										{:else}
-											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-												Pending
-											</span>
-										{/if}
+										<span class="text-[10px] text-muted-foreground">{item.sync_status || 'PENDING'}</span>
+									</td>
+
+									<!-- Sheets Status (Read-only) -->
+									<td class="p-3 text-center whitespace-nowrap">
+										<span class="text-[10px] text-muted-foreground">{item.is_upload === 'Y' ? 'Synced' : 'Pending'}</span>
 									</td>
 
 									<!-- Save / Cancel Actions -->
@@ -387,19 +419,58 @@
 									</td>
 									<td class="p-3 text-muted-foreground max-w-xs truncate">{item.description || '-'}</td>
 									<td class="p-3 font-bold text-right whitespace-nowrap">{formatIDR(item.amount)}</td>
+
+									<!-- Actual Budget Status Badge -->
 									<td class="p-3 text-center whitespace-nowrap">
-										{#if item.is_upload === 'Y'}
-											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-												Synced
+										{#if item.sync_status === 'SYNCED'}
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+												<CheckCircle2 class="w-3 h-3 text-emerald-500" /> Synced
+											</span>
+										{:else if item.sync_status === 'RECONCILIATION_REQUIRED' || item.sync_status === 'ROLLBACK_PENDING'}
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-600 border border-sky-500/20" title="Reconciling with Actual Budget">
+												<RefreshCw class="w-3 h-3 animate-spin text-sky-500" /> Reconciling
+											</span>
+										{:else if item.sync_status === 'SYNC_FAILED'}
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20" title="{item.sync_error || 'Actual write failed'} ({item.sync_failure_type || 'Error'})">
+												<AlertTriangle class="w-3 h-3 text-rose-500" /> Failed
 											</span>
 										{:else}
-											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+												<Clock class="w-3 h-3 text-amber-500" /> Pending
+											</span>
+										{/if}
+									</td>
+
+									<!-- Sheets Status -->
+									<td class="p-3 text-center whitespace-nowrap">
+										{#if item.is_upload === 'Y'}
+											<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-emerald-600 bg-emerald-500/10">
+												Uploaded
+											</span>
+										{:else}
+											<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-muted-foreground bg-secondary">
 												Pending
 											</span>
 										{/if}
 									</td>
+
 									<td class="p-3 text-center whitespace-nowrap">
 										<div class="flex items-center justify-center gap-1">
+											{#if item.sync_status === 'SYNC_FAILED'}
+												<button
+													on:click={() => handleRetry(item.id)}
+													disabled={retryingId === item.id}
+													title="Retry Actual Budget Sync"
+													class="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 rounded-md transition-colors disabled:opacity-50"
+												>
+													{#if retryingId === item.id}
+														<Loader2 class="w-4 h-4 animate-spin text-amber-400" />
+													{:else}
+														<RefreshCw class="w-4 h-4 text-amber-400" />
+													{/if}
+												</button>
+											{/if}
+
 											<button
 												on:click={() => handleStartEdit(item)}
 												disabled={item.is_upload === 'Y'}
@@ -481,4 +552,3 @@
 		{/if}
 	</div>
 </div>
-

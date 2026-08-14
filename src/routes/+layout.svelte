@@ -1,9 +1,7 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto, invalidate } from '$app/navigation';
-	import { supabase } from '$lib/services/supabase';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { authService } from '$lib/services/auth';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { Wallet, LayoutDashboard, Receipt, Tag, CreditCard, RefreshCw, LogOut, LogIn } from 'lucide-svelte';
@@ -11,20 +9,6 @@
 	export let data;
 
 	$: currentUser = data.user;
-
-	onMount(() => {
-		const {
-			data: { subscription }
-		} = supabase.auth.onAuthStateChange((_event, session) => {
-			if (session?.expires_at !== data.session?.expires_at) {
-				invalidate('supabase:auth');
-			}
-		});
-
-		return () => {
-			subscription.unsubscribe();
-		};
-	});
 
 	const queryClient = new QueryClient({
 		defaultOptions: {
@@ -46,7 +30,7 @@
 	async function handleSignOut() {
 		try {
 			await authService.signOut();
-			await invalidate('supabase:auth');
+			await invalidateAll();
 			goto('/auth');
 		} catch (e) {
 			console.error('Sign out error:', e);

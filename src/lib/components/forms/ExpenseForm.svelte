@@ -32,7 +32,7 @@
 
 	async function loadPaymentMethods() {
 		try {
-			paymentMethodItems = await paymentMethodService.getPaymentMethods();
+			paymentMethodItems = await paymentMethodService.getPaymentMethods(true);
 			if (paymentMethodItems.length > 0 && !paymentMethodItems.some((item) => item.name === paymentMethod)) {
 				paymentMethod = paymentMethodItems[0].name;
 			}
@@ -44,8 +44,8 @@
 	onMount(async () => {
 		try {
 			const [catData, pmData] = await Promise.all([
-				categoryService.getCategories(),
-				paymentMethodService.getPaymentMethods()
+				categoryService.getCategories(true),
+				paymentMethodService.getPaymentMethods(true)
 			]);
 			categories = catData;
 			if (categories.length > 0) {
@@ -58,10 +58,10 @@
 		} catch (e: any) {
 			// Fallback mock categories if DB empty in dev
 			categories = [
-				{ id: '1', name: 'Food', icon: 'utensils', color: '#ef4444', user_id: '1', created_at: '' },
-				{ id: '2', name: 'Coffee', icon: 'coffee', color: '#8b5cf6', user_id: '1', created_at: '' },
-				{ id: '3', name: 'Transport', icon: 'car', color: '#3b82f6', user_id: '1', created_at: '' },
-				{ id: '4', name: 'Bills', icon: 'file-text', color: '#f59e0b', user_id: '1', created_at: '' }
+				{ id: '1', name: 'Food', icon: 'utensils', color: '#ef4444', is_active: true, user_id: '1', created_at: '' },
+				{ id: '2', name: 'Coffee', icon: 'coffee', color: '#8b5cf6', is_active: true, user_id: '1', created_at: '' },
+				{ id: '3', name: 'Transport', icon: 'car', color: '#3b82f6', is_active: true, user_id: '1', created_at: '' },
+				{ id: '4', name: 'Bills', icon: 'file-text', color: '#f59e0b', is_active: true, user_id: '1', created_at: '' }
 			];
 			if (categories.length > 0) categoryId = categories[0].id;
 		}
@@ -110,7 +110,7 @@
 		loading = true;
 
 		try {
-			await expenseService.createExpense({
+			const res = await expenseService.createExpense({
 				amount: parsedAmount,
 				category_id: categoryId,
 				payment_method: paymentMethod,
