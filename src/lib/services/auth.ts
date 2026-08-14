@@ -13,10 +13,27 @@ export const authService = {
 	},
 
 	async signOut() {
-		const res = await fetch('/api/auth/logout', {
-			method: 'POST'
-		});
-		return await res.json();
+		try {
+			await fetch('/api/auth/logout', {
+				method: 'POST'
+			});
+		} catch (e) {
+			console.error('Logout error:', e);
+		}
+
+		// Client-side document cookie clearance for extra safety
+		if (typeof document !== 'undefined') {
+			const cookies = document.cookie.split(';');
+			for (let i = 0; i < cookies.length; i++) {
+				const cookie = cookies[i];
+				const eqPos = cookie.indexOf('=');
+				const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+				document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
+				document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.novianlabs.my.id;`;
+			}
+		}
+
+		return { message: 'Signed out successfully' };
 	},
 
 	async getSession() {
