@@ -14,13 +14,13 @@
 
 	async function loadPaymentMethods() {
 		loading = true;
-		try {
-			const [pmData, cfg] = await Promise.all([
-				paymentMethodService.getPaymentMethods(),
-				configService.getConfig()
-			]);
-			paymentMethods = pmData;
+
+		configService.getConfig().then(cfg => {
 			useActual = cfg.useActual;
+		}).catch(console.error);
+
+		try {
+			paymentMethods = await paymentMethodService.getPaymentMethods();
 		} catch (err: any) {
 			console.error('Failed loading payment methods:', err);
 		} finally {

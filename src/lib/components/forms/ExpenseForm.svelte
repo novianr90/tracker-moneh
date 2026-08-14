@@ -45,12 +45,15 @@
 	}
 
 	onMount(async () => {
+		configService.getConfig().then(cfg => {
+			useActual = cfg.useActual;
+		}).catch(console.error);
+
 		try {
-			const [catData, pmData, payeeData, cfg] = await Promise.all([
+			const [catData, pmData, payeeData] = await Promise.all([
 				categoryService.getCategories(true),
 				paymentMethodService.getPaymentMethods(true),
-				expenseService.getPayees().catch(() => []),
-				configService.getConfig()
+				expenseService.getPayees().catch(() => [])
 			]);
 			categories = catData;
 			if (categories.length > 0) {
@@ -61,7 +64,6 @@
 				paymentMethod = paymentMethodItems[0].name;
 			}
 			payees = payeeData;
-			useActual = cfg.useActual;
 		} catch (e: any) {
 			// Fallback mock categories if DB empty in dev
 			categories = [

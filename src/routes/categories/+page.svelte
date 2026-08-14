@@ -22,13 +22,13 @@
 
 	async function loadCategories() {
 		loading = true;
-		try {
-			const [catData, cfg] = await Promise.all([
-				categoryService.getCategories(),
-				configService.getConfig()
-			]);
-			categories = catData;
+		
+		configService.getConfig().then(cfg => {
 			useActual = cfg.useActual;
+		}).catch(console.error);
+
+		try {
+			categories = await categoryService.getCategories();
 		} catch (err: any) {
 			console.error('Failed loading categories:', err);
 		} finally {
