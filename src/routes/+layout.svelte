@@ -41,10 +41,15 @@
 		try {
 			await authService.signOut();
 			currentUser.set(null);
-			await invalidateAll();
-			goto('/auth');
+			data.user = null;
+			data.session = null;
+			window.location.href = '/auth';
 		} catch (e) {
 			console.error('Sign out error:', e);
+			currentUser.set(null);
+			data.user = null;
+			data.session = null;
+			window.location.href = '/auth';
 		}
 	}
 </script>
