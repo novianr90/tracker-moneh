@@ -4,13 +4,16 @@ export const GATEWAY_URL = (env as any).PUBLIC_GATEWAY_URL || 'http://localhost:
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
 	const url = `${GATEWAY_URL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+	const headers = new Headers(options.headers);
+
+	if (options.body && !headers.has('Content-Type')) {
+		headers.set('Content-Type', 'application/json');
+	}
+
 	const res = await fetch(url, {
 		...options,
 		credentials: 'include',
-		headers: {
-			'Content-Type': 'application/json',
-			...(options.headers || {})
-		}
+		headers
 	});
 
 	let data: any;
