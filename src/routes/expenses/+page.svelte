@@ -49,6 +49,7 @@
 		expense_date: '',
 		category_id: '',
 		payment_method: 'Cash',
+		payee: '',
 		amount: 0,
 		description: ''
 	};
@@ -112,6 +113,7 @@
 			expense_date: item.expense_date,
 			category_id: matchedCat ? matchedCat.id : (item as any).category_id || (categories[0]?.id ?? ''),
 			payment_method: item.payment_method || 'Cash',
+			payee: item.payee || '',
 			amount: item.amount,
 			description: item.description || ''
 		};
@@ -132,6 +134,7 @@
 				expense_date: editForm.expense_date,
 				category_id: editForm.category_id,
 				payment_method: editForm.payment_method,
+				payee: editForm.payee.trim() || null,
 				amount: editForm.amount,
 				description: editForm.description.trim()
 			});
@@ -347,13 +350,19 @@
 										</select>
 									</td>
 
-									<!-- Description Input -->
-									<td class="p-2">
+									<!-- Description & Payee Input -->
+									<td class="p-2 space-y-1">
+										<input
+											type="text"
+											bind:value={editForm.payee}
+											placeholder="Payee / Merchant..."
+											class="w-full px-2 py-1 bg-background border border-input rounded text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+										/>
 										<input
 											type="text"
 											bind:value={editForm.description}
-											placeholder="Description..."
-											class="w-full px-2 py-1 bg-background border border-input rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+											placeholder="Description / Notes..."
+											class="w-full px-2 py-1 bg-background border border-input rounded text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
 										/>
 									</td>
 
@@ -417,7 +426,14 @@
 											{item.payment_method || 'Cash'}
 										</span>
 									</td>
-									<td class="p-3 text-muted-foreground max-w-xs truncate">{item.description || '-'}</td>
+									<td class="p-3 max-w-xs">
+										{#if item.payee}
+											<div class="font-semibold text-foreground text-xs">{item.payee}</div>
+										{/if}
+										<div class="text-[11px] {item.payee ? 'text-muted-foreground' : 'text-foreground'} truncate">
+											{item.description || (item.payee ? '' : '-')}
+										</div>
+									</td>
 									<td class="p-3 font-bold text-right whitespace-nowrap">{formatIDR(item.amount)}</td>
 
 									<!-- Actual Budget Status Badge -->

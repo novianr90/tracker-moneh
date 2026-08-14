@@ -121,5 +121,9 @@ export const expenseService = {
 	async getDailyExpenseTrends(month?: string): Promise<DailyTrendPoint[]> {
 		const query = month ? `?month=${encodeURIComponent(month)}` : '';
 		return await apiFetch(`/api/expenses/trends${query}`);
+	},
+
+	async getPayees(): Promise<string[]> {
+		return await apiFetch('/api/payees');
 	}
 };
