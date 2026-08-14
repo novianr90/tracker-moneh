@@ -11,5 +11,5 @@
 		"strict": true,
 		"moduleResolution": "bundler"
 	},
-	"exclude": ["node_modules", ".svelte-kit", "supabase"]
+	"exclude": ["node_modules", "supabase"]
 }

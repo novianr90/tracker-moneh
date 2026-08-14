@@ -161,7 +161,10 @@
 					<div class="p-3 bg-secondary/40 border border-border rounded-lg flex items-center justify-between">
 						<div class="flex items-center gap-2.5">
 							<span class="w-4 h-4 rounded-full" style="background-color: {cat.color || '#6b7280'};"></span>
-							<span class="text-xs font-semibold text-foreground">{cat.name}</span>
+							<span class="text-xs font-semibold {cat.is_active === false ? 'line-through text-muted-foreground' : 'text-foreground'}">{cat.name}</span>
+							{#if cat.is_active === false}
+								<span class="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">Inactive</span>
+							{/if}
 						</div>
 						<button
 							on:click={() => handleDelete(cat.id)}

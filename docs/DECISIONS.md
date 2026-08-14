@@ -1,108 +1,132 @@
 # Architecture Decision Records (ADR)
 
-**Project:** Personal Expense Tracker  
-**Status:** Living Document  
-**Base Specs:** [PRD-Personal-Expense-Tracker.md](PRD-Personal-Expense-Tracker.md), [TECHNICAL-SPECIFICATION.md](TECHNICAL-SPECIFICATION.md)
+**Project:** Personal Expense Tracker (TrackerMoneh)  
+**Base Docs:** [PRD-Personal-Expense-Tracker.md](PRD-Personal-Expense-Tracker.md), [TECHNICAL-SPECIFICATION.md](TECHNICAL-SPECIFICATION.md), [DATABASE.md](DATABASE.md)
 
 ---
 
-## ADR-001: Use Supabase Instead of Custom Backend Server
+## ADR-001: Tech Stack Selection (SvelteKit 2 + Supabase)
 
 - **Status:** Accepted
-- **Context:** The application is a lightweight personal expense tracker for 2 users (owner and spouse). Building a dedicated Node.js/Go backend server introduces deployment, maintenance, and hosting overhead.
-- **Decision:** Use Supabase (PostgreSQL, Auth, PostgREST, RLS, Edge Functions) as the complete backend platform.
+- **Context:** Need a fast, responsive mobile-friendly web application for personal expense tracking (< 10s entry goal).
+- **Decision:** Use SvelteKit 2 with TypeScript, Tailwind CSS, and Supabase (PostgreSQL + Auth + Edge Functions).
 - **Consequences:**
-  - Zero backend server maintenance or infrastructure management.
-  - Security model strictly relies on PostgreSQL Row Level Security (RLS).
-  - Business logic is encapsulated in database RPC functions and Edge Functions.
+  - Fast page loads and minimal JavaScript bundle footprint.
+  - Built-in authentication, PostgreSQL RLS, and serverless edge functions.
 
 ---
 
-## ADR-002: Select SvelteKit as Frontend Framework
+## ADR-002: Bigint Representation for Currency (IDR)
 
 - **Status:** Accepted
-- **Context:** The frontend needs fast page loads, reactive UI for quick expense entry (< 10s goal), and excellent developer ergonomics on both mobile and desktop.
-- **Decision:** Build the frontend application using SvelteKit with Tailwind CSS, shadcn-svelte, and TanStack Query.
+- **Context:** Indonesian Rupiah (IDR) does not use fractional cents. Using `numeric(12,2)` or `float` introduces unnecessary rounding overhead and float precision issues.
+- **Decision:** Store all expense amounts as `bigint` integers.
 - **Consequences:**
-  - Minimal bundle size and high performance on mobile web.
-  - Clean separation of server state (TanStack Query) and component state.
-  - Native support for SSR and static adapter deployment.
+  - Zero precision loss across all aggregations.
+  - Faster indexing and compact storage.
 
 ---
 
-## ADR-003: PostgreSQL as Single Source of Truth
+## ADR-003: Row Level Security (RLS) for User Isolation
 
 - **Status:** Accepted
-- **Context:** Data integrity and security are critical. Financial records must be strictly isolated per user and resistant to accidental overwrites.
-- **Decision:** PostgreSQL database inside Supabase is the sole, authoritative Source of Truth for all expenses, categories, and audit logs.
+- **Context:** The application is shared by 2 users (owner and spouse) who need isolated private records while sharing the same database infrastructure.
+- **Decision:** Enforce PostgreSQL RLS on all tables where `user_id = auth.uid()`.
 - **Consequences:**
-  - All user queries interact directly with PostgreSQL via Supabase client.
-  - Reporting layers (Google Spreadsheet) act strictly as read-only or push destinations.
+  - Impossible for a user to query or mutate another user's records at the database level.
 
 ---
 
-## ADR-004: Google Spreadsheet as Reporting & Reconciliation Layer
+## ADR-004: Decoupled Google Spreadsheet Reporting Layer
 
 - **Status:** Accepted
-- **Context:** The users prefer reviewing monthly budgets and expense totals in spreadsheet layout for manual reconciliation, while needing fast mobile entry on the web app.
-- **Decision:** Treat Google Spreadsheet strictly as an asynchronous reporting destination synced from PostgreSQL via Supabase Edge Function.
+- **Context:** PostgreSQL is optimal for fast operational data, while Google Sheets is ideal for flexible reporting, formulas, and monthly budget reviews.
+- **Decision:** Use PostgreSQL as the operational source of truth and sync to Google Sheets via Edge Functions.
 - **Consequences:**
-  - Web app UI stays fast and focused on rapid expense capture.
-  - Spreadsheet remains accessible for custom manual formulas and monthly review.
-  - One-way synchronization avoids complex bi-directional sync conflicts.
+  - Fast app UI unaffected by Google API latency.
+  - Spreadsheet remains accessible for manual review.
 
 ---
 
 ## ADR-005: Manual Trigger Synchronization for MVP
 
 - **Status:** Accepted
-- **Context:** Setting up automated cron infrastructure for 2 users adds initial setup complexity when spreadsheet reconciliation only happens monthly.
-- **Decision:** Implement a manual "Sync to Spreadsheet" button in the web UI for MVP, while structuring Edge Functions to support future cron triggers.
-- **Consequences:**
-  - Zero unnecessary background execution or API quota usage.
-  - Simple, predictable execution under direct user control.
+- **Context:** Automated crons add initial operational overhead when spreadsheet reconciliation happens periodically.
+- **Decision:** Implement manual trigger alongside scheduled pg_cron support.
 
 ---
 
 ## ADR-006: Supabase Auth with Restricted User Registration
 
 - **Status:** Accepted
-- **Context:** Application is private, strictly designed for 2 users (owner and spouse). Public sign-up creates security risks.
-- **Decision:** Use Supabase Email & Password Auth with public user registration disabled in Supabase dashboard after initial user creation.
-- **Consequences:**
-  - Prevents unauthorized sign-ups completely.
-  - Row Level Security (`auth.uid() = user_id`) isolates data between the 2 authorized users.
+- **Context:** Application is private (strictly 2 users).
+- **Decision:** Disable public registration in Supabase; manage users directly via dashboard or invitation.
 
 ---
 
 ## ADR-007: Database RPC Functions for Aggregations
 
 - **Status:** Accepted
-- **Context:** Performing complex math, category percentage breakdowns, and monthly totals on client-side JS wastes mobile battery, increases payload sizes, and duplicates logic.
-- **Decision:** Move all dashboard metrics and aggregated data queries into PostgreSQL Stored Procedures (RPC Functions).
-- **Consequences:**
-  - Frontend receives pre-calculated JSON payloads in a single network request.
-  - Aggregations execute at database speed leveraging PostgreSQL indexes.
+- **Context:** Aggregating monthly totals and category rollups on client-side JS wastes bandwidth and CPU.
+- **Decision:** Move aggregations to PostgreSQL Stored Procedures (`get_monthly_summary`, `get_monthly_category_breakdown`).
 
 ---
 
 ## ADR-008: Payment Method & Dynamic User Wallet Management
 
 - **Status:** Accepted
-- **Context:** Users manage transactions across cash, e-wallets, and multiple bank accounts. Categorizing expenses only by spend type without tracking payment channels limits financial clarity and reconciliation accuracy.
-- **Decision:** Add `payment_method` tagging to `expenses` records and Google Sheets sync payload, backed by a user-isolated `payment_methods` master table with auto-provisioned defaults (`Cash`, `QRIS`, `Credit Card`, `GoPay/OVO`, `Bank Transfer`) and custom user wallet creation.
-- **Consequences:**
-  - Users can filter expense history and export CSVs by payment channel.
-  - Google Sheets exports reflect payment channel for reconciliation.
-  - Users can create custom e-wallets and bank payment methods seamlessly.
+- **Context:** Need to track payment channels (Cash, QRIS, Bank, E-Wallets).
+- **Decision:** Add `payment_method` tagging to `expenses` and a `payment_methods` master table.
 
 ---
 
 ## ADR-009: Interactive Daily Spending Velocity & Trend Analytics
 
 - **Status:** Accepted
-- **Context:** Monthly totals alone do not reveal daily spending velocity or peak expense days. Client-side iteration over raw transactions for chart generation is inefficient.
-- **Decision:** Encapsulate daily spend aggregation and running cumulative totals in a dedicated database RPC function (`get_daily_expense_trends`) returning zero-filled date series, rendered via an interactive SVG velocity chart on the dashboard.
+- **Context:** Monthly totals alone do not reveal daily velocity or peak spend days.
+- **Decision:** Use `get_daily_expense_trends` RPC for date series and render interactive SVG charts.
+
+---
+
+## ADR-010: Decoupled Fastify API Gateway (`moneh-gateway`)
+
+- **Status:** Accepted
+- **Context:** Direct browser-to-Supabase connections expose Supabase publishable keys and credentials, while third-party integrations (Actual Budget SDK) cannot run in browser environments.
+- **Decision:** Extract all backend communication, auth cookies, business logic, and third-party SDKs into a dedicated Fastify API Gateway (`moneh-gateway`).
 - **Consequences:**
-  - Single database query yields complete daily and cumulative velocity series.
-  - High-performance interactive chart rendering with Month-over-Month comparison support.
+  - Zero sensitive credentials exposed on the frontend client.
+  - Unified REST API surface for all frontend consumers.
+  - Clean separation of concerns between UI client and backend orchestrator.
+
+---
+
+## ADR-011: Saga Dual-Write & Background Reconciliation for Actual Budget
+
+- **Status:** Accepted
+- **Context:** Synchronizing expense records with Actual Budget (Financial System of Record) without distributed transactions risks partial write failures, network timeouts, and ledger divergence.
+- **Decision:** Implement a 4-phase Saga flow with client-side idempotency (`idempotency_key`), durable payee side-effects, state transitions (`PENDING`, `SYNCED`, `ROLLBACK_PENDING`, `SYNC_FAILED`, `RECONCILIATION_REQUIRED`), and an automated background reconciliation engine matching correlation IDs.
+- **Consequences:**
+  - Resilient dual-write with zero duplicate transactions in Actual Budget.
+  - Transient network blips automatically self-heal via background reconciliation.
+
+---
+
+## ADR-012: Feature Flagging for Actual Budget (`USE_ACTUAL`)
+
+- **Status:** Accepted
+- **Context:** Deploying the gateway mid-month before transitioning financial ledger balances requires pausing Actual Budget transaction writes while keeping master data sync and Google Sheets reporting active.
+- **Decision:** Introduce a lightweight environment-driven feature flag `USE_ACTUAL=false|true`.
+- **Consequences:**
+  - Gateway runs seamlessly in standalone mode without attempting Actual Budget ledger writes when disabled.
+  - Instant zero-code activation when ready at the beginning of the month.
+
+---
+
+## ADR-013: Soft-Deactivation Master Data Synchronization (`is_active`)
+
+- **Status:** Accepted
+- **Context:** Deleting master categories or payment methods in Supabase when synchronizing from Actual Budget violates foreign key constraints (`on delete restrict`) on historical expenses.
+- **Decision:** Add `is_active BOOLEAN NOT NULL DEFAULT true` to `categories` and `payment_methods`. When master data sync runs, items present in Actual Budget are activated (`is_active = true`), while redundant/closed items in Supabase are soft-deactivated (`is_active = false`).
+- **Consequences:**
+  - Historical expenses retain valid category and payment method references with zero data loss.
+  - Expense entry dropdowns filter exclusively for active items.
