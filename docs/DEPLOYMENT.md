@@ -87,3 +87,35 @@ supabase db push
 # Deploy edge functions
 supabase functions deploy sync-google-sheets
 ```
+
+Verify secrets are set in target environment:
+```bash
+supabase secrets set GOOGLE_SERVICE_ACCOUNT_EMAIL="..." GOOGLE_PRIVATE_KEY="..." GOOGLE_SPREADSHEET_ID="..."
+```
+
+---
+
+## 5. Backup & Recovery Procedures
+
+### 5.1 Database Backup Strategy
+- **Automated Backups:** Supabase performs daily automated PostgreSQL database backups.
+- **Point-In-Time Recovery (PITR):** Production instance supports PITR, allowing restoration to any specific second within retention window.
+- **Manual Backups:** Can be generated via CLI:
+  ```bash
+  supabase db dump -f backup.sql
+  ```
+
+### 5.2 Database Restore Strategy
+- In case of critical database corruption, initiate Point-In-Time Recovery via Supabase Project Dashboard under `Database -> Backups`.
+- Select target restore timestamp immediately prior to incident occurrence.
+
+### 5.3 Google Spreadsheet Recovery
+- **Google Sheets Revision History:** If data corruption occurs in the spreadsheet, use Google Sheets built-in Version History (`File -> Version history -> See version history`) to restore to a known good state.
+- **Re-Sync Trigger:** Triggering manual sync from the application will reconcile and mirror all valid database records back to the spreadsheet.
+
+### 5.4 Deployment & Migration Rollback Procedure
+1. **Frontend Rollback:** Revert frontend host build to previous stable commit tag.
+2. **Database Rollback:** 
+   - Migrations should always be additive.
+   - If a rollback requires reverting schema changes, create a new compensating migration file (`supabase migration new revert_<feature>`) and apply via `supabase db push`.
+   - Never manually drop production tables.
