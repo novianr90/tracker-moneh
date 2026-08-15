@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { apiFetch } from './apiClient';
 import type { Database } from '$lib/types/database.types';
 
 export type Expense = Database['public']['Tables']['expenses']['Row'];
@@ -44,159 +44,86 @@ export interface PaginatedExpenses {
 	totalPages: number;
 }
 
+export interface ExpenseOperationResult {
+	expense: Expense;
+	statusCode?: number;
+	cached?: boolean;
+	message?: string;
+}
+
 export const expenseService = {
 	async getExpenses(filters?: ExpenseFilters): Promise<PaginatedExpenses> {
-		const { data: { user } } = await supabase.auth.getUser();
-		if (!user) throw new Error('AUTH002: User unauthenticated');
+		const params = new URLSearchParams();
+		if (filters?.startDate) params.set('startDate', filters.startDate);
+		if (filters?.endDate) params.set('endDate', filters.endDate);
+		if (filters?.categoryId) params.set('categoryId', filters.categoryId);
+		if (filters?.paymentMethod) params.set('paymentMethod', filters.paymentMethod);
+		if (filters?.searchKey) params.set('searchKey', filters.searchKey);
+		if (filters?.page) params.set('page', filters.page.toString());
+		if (filters?.pageSize) params.set('pageSize', filters.pageSize.toString());
 
-		const page = filters?.page && filters.page > 0 ? filters.page : 1;
-		const pageSize = filters?.pageSize && filters.pageSize > 0 ? filters.pageSize : 25;
-		const from = (page - 1) * pageSize;
-		const to = from + pageSize - 1;
-
-		let query = (supabase
-			.from('recent_expenses') as any)
-			.select('*', { count: 'exact' })
-			.eq('user_id', user.id)
-			.order('expense_date', { ascending: false });
-
-		if (filters?.startDate) {
-			query = query.gte('expense_date', filters.startDate);
-		}
-		if (filters?.endDate) {
-			query = query.lte('expense_date', filters.endDate);
-		}
-		if (filters?.categoryId) {
-			query = query.eq('category_name', filters.categoryId);
-		}
-		if (filters?.paymentMethod) {
-			query = query.eq('payment_method', filters.paymentMethod);
-		}
-		if (filters?.searchKey) {
-			query = query.ilike('description', `%${filters.searchKey}%`);
-		}
-
-		query = query.range(from, to);
-
-		const { data, error, count } = await query;
-		if (error) throw error;
-
-		const totalCount = count || 0;
-		const totalPages = Math.ceil(totalCount / pageSize) || 1;
-
-		return {
-			data: data || [],
-			totalCount,
-			page,
-			pageSize,
-			totalPages
-		};
+		const query = params.toString();
+		return await apiFetch(`/api/expenses${query ? `?${query}` : ''}`);
 	},
 
-	async createExpense(payload: Omit<InsertExpense, 'user_id'>): Promise<Expense> {
-		const { data: { user } } = await supabase.auth.getUser();
-		if (!user) throw new Error('AUTH002: User unauthenticated');
-
-		if (payload.amount <= 0) {
-			throw new Error('EXP002: Expense amount must be greater than 0');
-		}
-
-		const { data, error } = await (supabase
-			.from('expenses') as any)
-			.insert({
+	async createExpense(payload: Omit<InsertExpense, 'user_id'>, idempotencyKey?: string): Promise<ExpenseOperationResult> {
+		const key = idempotencyKey || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `moneh-${Date.now()}`);
+		const res = await apiFetch('/api/expenses', {
+			method: 'POST',
+			headers: {
+				'Idempotency-Key': key
+			},
+			body: JSON.stringify({
 				...payload,
-				user_id: user.id
+				idempotency_key: key
 			})
-			.select()
-			.single();
+		});
 
-		if (error) throw error;
-		return data;
+		if (res && res.expense) {
+			return res;
+		}
+		return { expense: res, statusCode: 201 };
+	},
+
+	async retryExpense(id: string): Promise<ExpenseOperationResult> {
+		return await apiFetch(`/api/expenses/${id}/retry`, {
+			method: 'POST'
+		});
 	},
 
 	async updateExpense(id: string, payload: UpdateExpense): Promise<Expense> {
-		if (payload.amount !== undefined && payload.amount <= 0) {
-			throw new Error('EXP002: Expense amount must be greater than 0');
-		}
-
-		// Prevent editing expenses that are already synced to Google Sheets
-		const { data: existing } = await (supabase
-			.from('expenses') as any)
-			.select('is_upload')
-			.eq('id', id)
-			.maybeSingle();
-
-		if (existing?.is_upload === 'Y') {
-			throw new Error('EXP003: Cannot edit an expense that has already been synced to Google Sheets');
-		}
-
-		const { data, error } = await (supabase
-			.from('expenses') as any)
-			.update(payload)
-			.eq('id', id)
-			.select()
-			.single();
-
-		if (error) throw error;
-		return data;
+		return await apiFetch(`/api/expenses/${id}`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		});
 	},
 
 	async deleteExpense(id: string): Promise<void> {
-		const { error } = await (supabase
-			.from('expenses') as any)
-			.delete()
-			.eq('id', id);
-
-		if (error) throw error;
+		await apiFetch(`/api/expenses/${id}`, {
+			method: 'DELETE'
+		});
 	},
 
 	async getMonthlySummary(month?: string): Promise<MonthlySummary> {
-		const { data, error } = await (supabase as any).rpc('get_monthly_summary', {
-			p_month: month
-		});
-
-		if (error) throw error;
-		if (data && data.length > 0) {
-			return {
-				total_amount: Number(data[0].total_amount),
-				transaction_count: Number(data[0].transaction_count),
-				prev_month_total: Number(data[0].prev_month_total)
-			};
-		}
-		return { total_amount: 0, transaction_count: 0, prev_month_total: 0 };
+		const query = month ? `?month=${encodeURIComponent(month)}` : '';
+		return await apiFetch(`/api/expenses/summary${query}`);
 	},
 
 	async getMonthlyCategoryBreakdown(month?: string): Promise<CategoryBreakdown[]> {
-		const { data, error } = await (supabase as any).rpc('get_monthly_category_breakdown', {
-			p_month: month
-		});
-
-		if (error) throw error;
-		return (data || []).map((row: any) => ({
-			...row,
-			total_amount: Number(row.total_amount)
-		}));
+		const query = month ? `?month=${encodeURIComponent(month)}` : '';
+		return await apiFetch(`/api/expenses/category-breakdown${query}`);
 	},
 
 	async getRecentTransactions(limit = 10): Promise<RecentExpenseView[]> {
-		const { data, error } = await (supabase as any).rpc('get_recent_transactions', {
-			p_limit: limit
-		});
-
-		if (error) throw error;
-		return data || [];
+		return await apiFetch(`/api/expenses/recent?limit=${limit}`);
 	},
 
 	async getDailyExpenseTrends(month?: string): Promise<DailyTrendPoint[]> {
-		const { data, error } = await (supabase as any).rpc('get_daily_expense_trends', {
-			p_month: month
-		});
+		const query = month ? `?month=${encodeURIComponent(month)}` : '';
+		return await apiFetch(`/api/expenses/trends${query}`);
+	},
 
-		if (error) throw error;
-		return (data || []).map((row: any) => ({
-			expense_date: row.expense_date,
-			daily_total: Number(row.daily_total),
-			cumulative_total: Number(row.cumulative_total)
-		}));
+	async getPayees(): Promise<string[]> {
+		return await apiFetch('/api/payees');
 	}
 };

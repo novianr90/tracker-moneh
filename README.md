@@ -1,124 +1,111 @@
 # Personal Expense Tracker (TrackerMoneh)
 
-A lightweight, high-performance personal expense tracker built for private use (2 users: owner and spouse). Focuses on rapid expense entry (< 10s goal) on mobile and desktop web, backed by Supabase and reporting to Google Spreadsheet.
+A lightweight, high-performance personal expense tracker built for private use (owner and spouse). Focuses on rapid expense entry (< 10s goal) on mobile and desktop web, powered by a dedicated Fastify API Gateway, backed by Supabase PostgreSQL, synchronized with Actual Budget (Financial Ledger), and reporting to Google Spreadsheet.
 
 ---
 
-## Architecture Overview
+## 🏛️ System Architecture
 
 ```text
-               User (Browser)
-                     │
-                     ▼
-             SvelteKit Web App
-    (SvelteKit 2 + @supabase/ssr)
-                     │
-                     ▼
-           Supabase Platform
-   ┌─────────────────────────────────┐
-   │ - PostgreSQL (bigint currency)  │
-   │ - Auth (@supabase/ssr Cookies)  │
-   │ - RPCs & Views                  │
-   │ - Row Level Security (RLS)      │
-   │ - Edge Function (Sync)          │
-   └────────────────┬────────────────┘
-                    │ (API Key Auth)
-                    ▼
-        Google Apps Script Web App
-                    │
-                    ▼
-          Google Spreadsheet
-     (Reporting & Monthly Review)
+               User (Browser / Mobile Web)
+                           │
+                           ▼
+                 SvelteKit Frontend App
+                    (tracker-moneh)
+                           │
+                           │  HTTP / REST (Session Cookies)
+                           ▼
+                  Fastify API Gateway
+                    (moneh-gateway)
+        ┌──────────────────┴──────────────────┐
+        │                                     │
+        ▼                                     ▼
+Supabase Operational Store           Actual Budget Server
+ (PostgreSQL, RLS, Views, RPCs)      (System of Record / Ledger)
+        │                                     │
+        │ Edge Function                       │ REST / WebSocket
+        ▼                                     ▼
+Google Spreadsheet Reporting             Local SQLite Cache
+  (Analytics & Review)               (budget.novianlabs.my.id)
 ```
 
 ---
 
-## Features (MVP)
+## ✨ Features
 
-- **SSR & Cookie Authentication:** Secure auth using `@supabase/ssr` server-side session cookies & reactive SvelteKit state invalidation.
-- **Rapid Expense Capture:** Add expense entries in under 10 seconds.
-- **Dynamic Categories:** Custom categories with icons and color tags.
-- **Dashboard:** Instant spending aggregates via server-side database RPCs and metric summary cards.
-- **Google Spreadsheet Sync:** One-way manual reconciliation to Google Sheets via Supabase Edge Function & Google Apps Script Web App with API Key protection.
+- **Decoupled API Gateway:** Fastify-powered gateway encapsulates master credentials, eliminates CORS exposure, and acts as the central business logic orchestrator.
+- **Saga Dual-Write & Ledger Sync:** Resilient dual-write to Supabase and Actual Budget with client-side idempotency (`idempotency_key`), automatic rollback detection, and background reconciliation.
+- **Master Data Smart Sync:** One-click synchronization of Categories and Payment Methods from Actual Budget with `is_active` soft-activation/deactivation.
+- **Google Spreadsheet Reporting:** Preserved one-way reconciliation to Google Sheets for monthly reviews and financial dashboards.
+- **Feature Flagging (`USE_ACTUAL`):** Ability to toggle Actual Budget integration on/off seamlessly via environment variables without interrupting standalone operation.
+- **Rapid Expense Capture:** Add expense entries in under 10 seconds with automatic category coloring, account selection, and quick edit.
+- **Session-Based Authentication:** Secure authentication using HTTP-only cookies and route guarding.
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 - **Frontend Framework:** [SvelteKit 2](https://kit.svelte.dev/) (Svelte 4)
-- **UI Components & Styling:** Tailwind CSS, Lucide Icons
-- **State & Data Fetching:** [TanStack Query (Svelte)](https://tanstack.com/query/latest)
-- **Backend & Auth:** [Supabase](https://supabase.com/) (`@supabase/ssr`, PostgreSQL, RLS, Edge Functions)
+- **Styling & UI:** Tailwind CSS, Lucide Icons
+- **Backend API Gateway:** [Fastify](https://fastify.dev/) (`moneh-gateway`) on Node.js 22
+- **Database & Auth:** [Supabase](https://supabase.com/) (PostgreSQL, RLS, Views, RPCs)
+- **Financial Ledger:** [Actual Budget](https://actualbudget.org/) (`@actual-app/api`)
 - **Reporting Target:** Google Spreadsheet via Google Apps Script Web App
 
 ---
 
-## Non-Goals (Out of Scope for MVP)
-
-To prevent scope creep, the MVP explicitly does **NOT** support:
-- ❌ Offline mode / PWA sync
-- ❌ Multi-currency conversion (IDR only)
-- ❌ OCR receipt scanning
-- ❌ AI automatic categorization
-- ❌ Public user registration
-- ❌ Shared household / multi-tenant organizations
-
----
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js >= 18.x
-- npm / pnpm / yarn
-- [Supabase CLI](https://supabase.com/docs/guides/cli)
+- Node.js >= 22
+- npm / pnpm
 
-### Installation
+### 1. Configure Environment Variables
 
-1. **Clone repository & install dependencies:**
-   ```bash
-   npm install
-   ```
+Create `.env` inside `tracker-moneh`:
+```env
+PUBLIC_GATEWAY_URL=http://localhost:4000
+ENABLE_SYNC=true
+ENABLE_DEBUG=false
+PORT=3004
+```
 
-2. **Configure Environment Variables:**
-   Copy `.env.example` to `.env`:
-   ```env
-   PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-   PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   ENABLE_SYNC=true
-   ENABLE_DEBUG=false
-   ```
+### 2. Install Dependencies & Run Development
 
-3. **Supabase Local Development:**
-   ```bash
-   # Start local Supabase containers
-   supabase start
+```bash
+# Install dependencies
+npm install
 
-   # Apply database migrations
-   supabase db push
+# Start development server
+npm run dev
+```
 
-   # Generate TypeScript types
-   supabase gen types typescript --local > src/lib/types/database.types.ts
-   ```
-
-4. **Run Development Server:**
-   ```bash
-   npm run dev
-   ```
+The application will be accessible at `http://localhost:5173` (or `http://localhost:3004` in preview/docker).
 
 ---
 
-## Documentation Index
+## 🧪 Verification & Checks
 
-Detailed architectural specs and setup guidelines:
+```bash
+# SvelteKit sync & TypeScript diagnostics
+npm run check
 
-- 📋 [PRD-Personal-Expense-Tracker.md](docs/PRD-Personal-Expense-Tracker.md) — Product Requirements Document
-- 📐 [TECHNICAL-SPECIFICATION.md](docs/TECHNICAL-SPECIFICATION.md) — System & Service Layer Technical Spec
-- 🗄️ [DATABASE.md](docs/DATABASE.md) — PostgreSQL Schema, RLS, Views, & RPC Specs
-- 🧱 [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Visual Architecture Diagrams & Data Flows
-- 📁 [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) — Directory Layout & Code Responsibility Guidelines
-- ⚡ [SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) — Supabase CLI, Migrations, & Secrets Setup
-- 📊 [SPREADSHEET.md](docs/SPREADSHEET.md) — Google Sheets & Apps Script Sync Setup Guide
-- ⏰ [SCHEDULED.md](docs/SCHEDULED.md) — Automated Background Sync (`pg_cron`) Guide
-- 🚀 [DEPLOYMENT.md](docs/DEPLOYMENT.md) — Deployment Sequence & Recovery Procedures
-- ⚖️ [DECISIONS.md](docs/DECISIONS.md) — Architecture Decision Records (ADRs)
+# Production bundle build
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+---
+
+## 📚 Documentation
+
+Detailed documentation is available in the [`docs/`](file:///D:/Code/projects/moneh/tracker-moneh/docs) directory:
+- [System Architecture](file:///D:/Code/projects/moneh/tracker-moneh/docs/ARCHITECTURE.md)
+- [Database Schema & Migrations](file:///D:/Code/projects/moneh/tracker-moneh/docs/DATABASE.md)
+- [Deployment Guide (Coolify)](file:///D:/Code/projects/moneh/tracker-moneh/docs/DEPLOYMENT.md)
+- [Project Structure](file:///D:/Code/projects/moneh/tracker-moneh/docs/PROJECT_STRUCTURE.md)
+- [Architecture Decisions (ADR)](file:///D:/Code/projects/moneh/tracker-moneh/docs/DECISIONS.md)
+- [Actual Budget Integration Spec](file:///D:/Code/projects/moneh/moneh-gateway/docs/ACTUAL_BUDGET_INTEGRATION.md)

@@ -2,8 +2,10 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { expenseService } from '$lib/services/expenses';
 	import { categoryService, type Category } from '$lib/services/categories';
+	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
+	import { configService } from '$lib/services/config';
 	import { getTodayISODate } from '$lib/utils/formatters';
-	import { Plus, Loader2, Check } from 'lucide-svelte';
+	import { Plus, Loader2, Check, Store } from 'lucide-svelte';
 
 	const dispatch = createEventDispatcher<{
 		submitted: void;
@@ -12,18 +14,19 @@
 
 	export let onSuccess: (() => void) | undefined = undefined;
 
-	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
-
 	let amount = '';
 	let categoryId = '';
 	let paymentMethod = 'Cash';
+	let payee = '';
 	let description = '';
 	let expenseDate = getTodayISODate();
 
+	let payees: string[] = [];
 	let paymentMethodItems: PaymentMethodItem[] = [];
 	let isAddingCustomMethod = false;
 	let customMethodName = '';
 	let savingCustomMethod = false;
+	let useActual = false;
 
 	let categories: Category[] = [];
 	let loading = false;
@@ -32,7 +35,7 @@
 
 	async function loadPaymentMethods() {
 		try {
-			paymentMethodItems = await paymentMethodService.getPaymentMethods();
+			paymentMethodItems = await paymentMethodService.getPaymentMethods(true);
 			if (paymentMethodItems.length > 0 && !paymentMethodItems.some((item) => item.name === paymentMethod)) {
 				paymentMethod = paymentMethodItems[0].name;
 			}
@@ -42,10 +45,15 @@
 	}
 
 	onMount(async () => {
+		configService.getConfig().then(cfg => {
+			useActual = cfg.useActual;
+		}).catch(console.error);
+
 		try {
-			const [catData, pmData] = await Promise.all([
-				categoryService.getCategories(),
-				paymentMethodService.getPaymentMethods()
+			const [catData, pmData, payeeData] = await Promise.all([
+				categoryService.getCategories(true),
+				paymentMethodService.getPaymentMethods(true),
+				expenseService.getPayees().catch(() => [])
 			]);
 			categories = catData;
 			if (categories.length > 0) {
@@ -55,13 +63,14 @@
 			if (paymentMethodItems.length > 0) {
 				paymentMethod = paymentMethodItems[0].name;
 			}
+			payees = payeeData;
 		} catch (e: any) {
 			// Fallback mock categories if DB empty in dev
 			categories = [
-				{ id: '1', name: 'Food', icon: 'utensils', color: '#ef4444', user_id: '1', created_at: '' },
-				{ id: '2', name: 'Coffee', icon: 'coffee', color: '#8b5cf6', user_id: '1', created_at: '' },
-				{ id: '3', name: 'Transport', icon: 'car', color: '#3b82f6', user_id: '1', created_at: '' },
-				{ id: '4', name: 'Bills', icon: 'file-text', color: '#f59e0b', user_id: '1', created_at: '' }
+				{ id: '1', name: 'Food', icon: 'utensils', color: '#ef4444', is_active: true, user_id: '1', created_at: '' },
+				{ id: '2', name: 'Coffee', icon: 'coffee', color: '#8b5cf6', is_active: true, user_id: '1', created_at: '' },
+				{ id: '3', name: 'Transport', icon: 'car', color: '#3b82f6', is_active: true, user_id: '1', created_at: '' },
+				{ id: '4', name: 'Bills', icon: 'file-text', color: '#f59e0b', is_active: true, user_id: '1', created_at: '' }
 			];
 			if (categories.length > 0) categoryId = categories[0].id;
 		}
@@ -110,18 +119,25 @@
 		loading = true;
 
 		try {
-			await expenseService.createExpense({
+			const res = await expenseService.createExpense({
 				amount: parsedAmount,
 				category_id: categoryId,
 				payment_method: paymentMethod,
-				description: description.trim(),
+				payee: payee.trim() || undefined,
+				description: description.trim() || undefined,
 				expense_date: expenseDate
 			});
 
+			// Append new payee to local list for future autocompletion
+			if (payee.trim() && !payees.includes(payee.trim())) {
+				payees = [...payees, payee.trim()].sort((a, b) => a.localeCompare(b));
+			}
+
 			// Reset form for rapid entry (<10s goal)
 			amount = '';
+			payee = '';
 			description = '';
-			paymentMethod = 'Cash';
+			paymentMethod = paymentMethodItems.length > 0 ? paymentMethodItems[0].name : 'Cash';
 			successMsg = true;
 
 			setTimeout(() => {
@@ -191,6 +207,31 @@
 			</select>
 		</div>
 
+		<!-- Payee (Merchant / Toko) with Autocomplete -->
+		<div>
+			<label for="payee-input" class="block text-xs font-medium text-muted-foreground mb-1">
+				Payee / Merchant (Optional)
+			</label>
+			<div class="relative">
+				<span class="absolute left-3 top-2.5 text-muted-foreground">
+					<Store class="w-4 h-4" />
+				</span>
+				<input
+					id="payee-input"
+					type="text"
+					list="payee-datalist"
+					placeholder="e.g. Starbucks, Indomaret, PLN..."
+					bind:value={payee}
+					class="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
+				/>
+				<datalist id="payee-datalist">
+					{#each payees as p}
+						<option value={p}></option>
+					{/each}
+				</datalist>
+			</div>
+		</div>
+
 		<!-- Payment Method Selector -->
 		<div>
 			<label for="payment-method-select" class="block text-xs font-medium text-muted-foreground mb-1">Payment Method</label>
@@ -229,7 +270,9 @@
 					{#each paymentMethodItems as pm}
 						<option value={pm.name}>{pm.name}</option>
 					{/each}
-					<option value="__NEW_CUSTOM__">+ Add Custom Payment Method...</option>
+					{#if !useActual}
+						<option value="__NEW_CUSTOM__">+ Add Custom Payment Method...</option>
+					{/if}
 				</select>
 			{/if}
 		</div>
@@ -247,12 +290,12 @@
 		</div>
 
 		<!-- Description Input -->
-		<div class="md:col-span-2">
-			<label for="description-input" class="block text-xs font-medium text-muted-foreground mb-1">Description (Optional)</label>
+		<div>
+			<label for="description-input" class="block text-xs font-medium text-muted-foreground mb-1">Notes / Description (Optional)</label>
 			<input
 				id="description-input"
 				type="text"
-				placeholder="Coffee, Lunch, Petrol..."
+				placeholder="Details, e.g. 2 iced latte, groceries..."
 				bind:value={description}
 				class="w-full px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
 			/>

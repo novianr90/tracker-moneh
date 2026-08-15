@@ -1,70 +1,46 @@
-import { createServerClient } from '@supabase/ssr';
 import { type Handle, redirect } from '@sveltejs/kit';
 import * as env from '$env/static/public';
-import ws from 'ws';
 
-// Polyfill WebSocket for Node.js 20 SSR environment
-if (typeof globalThis.WebSocket === 'undefined') {
-	globalThis.WebSocket = ws as any;
-}
-
-const supabaseUrl = (env as any).PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
-const supabaseKey = (env as any).PUBLIC_SUPABASE_ANON_KEY || (env as any).PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'placeholder';
+const GATEWAY_URL = (env as any).PUBLIC_GATEWAY_URL || 'http://localhost:4000';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	event.locals.supabase = createServerClient(
-		supabaseUrl,
-		supabaseKey,
-		{
-			cookies: {
-				getAll() {
-					return event.cookies.getAll();
-				},
-				setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-					cookiesToSet.forEach(({ name, value, options }) =>
-						event.cookies.set(name, value, { ...options, path: '/' })
-					);
-				}
-			},
-			realtime: {
-				transport: ws as any
-			}
-		}
-	) as any;
-
 	event.locals.safeGetSession = async () => {
-		const {
-			data: { user },
-			error
-		} = await event.locals.supabase.auth.getUser();
+		try {
+			const token = event.cookies.get('sb-access-token');
+			if (!token) {
+				return { session: null, user: null };
+			}
 
-		if (error || !user) {
-			return { session: null, user: null };
+			const res = await event.fetch(`${GATEWAY_URL}/api/auth/me`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+					cookie: `sb-access-token=${token}`
+				}
+			});
+			if (res.ok) {
+				const data = await res.json();
+				return { session: data.session, user: data.user };
+			}
+		} catch (e) {
+			console.error('Failed to authenticate via gateway:', e);
 		}
-
-		const {
-			data: { session }
-		} = await event.locals.supabase.auth.getSession();
-
-		return { session, user };
+		return { session: null, user: null };
 	};
 
 	const { session, user } = await event.locals.safeGetSession();
 	event.locals.session = session;
 	event.locals.user = user;
 
-	// Mandatory Route Guard: Redirect all unauthenticated requests to /auth
-	if (!user && !event.url.pathname.startsWith('/auth')) {
+	// Route Guards: Allow /auth and /api/auth endpoints without redirect loop
+	const isAuthRoute = event.url.pathname.startsWith('/auth') || event.url.pathname.startsWith('/api/auth');
+
+	if (!user && !isAuthRoute) {
 		throw redirect(303, '/auth');
-  }
+	}
 
-  if (user && event.url.pathname.startsWith('/auth')) {
-	throw redirect(303, '/');
-  }
+	if (user && event.url.pathname === '/auth') {
+		throw redirect(303, '/');
+	}
 
-	return resolve(event, {
-		filterSerializedResponseHeaders(name) {
-			return name === 'content-range' || name === 'x-supabase-api-version';
-		}
-	});
+	return resolve(event);
 };

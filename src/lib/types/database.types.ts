@@ -6,6 +6,9 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type SyncStatus = 'PENDING' | 'SYNCED' | 'ROLLBACK_PENDING' | 'SYNC_FAILED' | 'RECONCILIATION_REQUIRED';
+export type SyncFailureType = 'DEFINITE_FAILURE' | 'RECONCILIATION_EXHAUSTED' | null;
+
 export interface Database {
   public: {
     Tables: {
@@ -16,6 +19,7 @@ export interface Database {
           name: string
           icon: string
           color: string
+          is_active: boolean
           created_at: string
         }
         Insert: {
@@ -24,6 +28,7 @@ export interface Database {
           name: string
           icon?: string
           color?: string
+          is_active?: boolean
           created_at?: string
         }
         Update: {
@@ -32,6 +37,7 @@ export interface Database {
           name?: string
           icon?: string
           color?: string
+          is_active?: boolean
           created_at?: string
         }
       }
@@ -41,10 +47,17 @@ export interface Database {
           user_id: string
           category_id: string
           amount: number
+          payee: string | null
           description: string
           expense_date: string
           payment_method: string
           is_upload: string
+          actual_transaction_id: string | null
+          sync_status: SyncStatus
+          sync_failure_type: SyncFailureType
+          sync_error: string | null
+          synced_at: string | null
+          idempotency_key: string | null
           created_at: string
           updated_at: string
         }
@@ -53,10 +66,17 @@ export interface Database {
           user_id: string
           category_id: string
           amount: number
+          payee?: string | null
           description?: string
           expense_date?: string
           payment_method?: string
           is_upload?: string
+          actual_transaction_id?: string | null
+          sync_status?: SyncStatus
+          sync_failure_type?: SyncFailureType
+          sync_error?: string | null
+          synced_at?: string | null
+          idempotency_key?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -65,10 +85,17 @@ export interface Database {
           user_id?: string
           category_id?: string
           amount?: number
+          payee?: string | null
           description?: string
           expense_date?: string
           payment_method?: string
           is_upload?: string
+          actual_transaction_id?: string | null
+          sync_status?: SyncStatus
+          sync_failure_type?: SyncFailureType
+          sync_error?: string | null
+          synced_at?: string | null
+          idempotency_key?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -89,7 +116,7 @@ export interface Database {
           user_id: string
           started_at?: string
           finished_at?: string | null
-          status: 'in_progress' | 'success' | 'failed'
+          status?: 'in_progress' | 'success' | 'failed'
           synced_count?: number
           error_message?: string | null
           created_at?: string
@@ -110,18 +137,21 @@ export interface Database {
           id: string
           user_id: string
           name: string
+          is_active: boolean
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
           name: string
+          is_active?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           user_id?: string
           name?: string
+          is_active?: boolean
           created_at?: string
         }
       }
@@ -131,11 +161,21 @@ export interface Database {
         Row: {
           id: string
           user_id: string
+          category_id: string
           amount: number
+          payee: string | null
           description: string
           expense_date: string
           payment_method: string
           is_upload: string
+          actual_transaction_id: string | null
+          sync_status: SyncStatus
+          sync_failure_type: SyncFailureType
+          sync_error: string | null
+          synced_at: string | null
+          idempotency_key: string | null
+          created_at: string
+          updated_at: string
           category_name: string
           category_color: string
           category_icon: string

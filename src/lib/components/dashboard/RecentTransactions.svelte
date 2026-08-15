@@ -39,8 +39,21 @@
 									{item.payment_method || 'Cash'}
 								</span>
 							</div>
-							<div class="text-xs text-muted-foreground">
-								{item.description || 'No description'} • {formatDate(item.expense_date)}
+							<div class="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+								{#if item.payee}
+									<span class="font-medium text-foreground">{item.payee}</span>
+									{#if item.description}
+										<span>•</span>
+									{/if}
+								{/if}
+								{#if item.description}
+									<span>{item.description}</span>
+								{/if}
+								{#if !item.payee && !item.description}
+									<span>No details</span>
+								{/if}
+								<span>•</span>
+								<span>{formatDate(item.expense_date)}</span>
 							</div>
 						</div>
 					</div>

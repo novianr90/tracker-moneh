@@ -1,6 +1,6 @@
 # Deployment & Operational Specification: Personal Expense Tracker
 
-**Version:** 0.2  
+**Version:** 1.1  
 **Status:** Approved Architectural Spec  
 **Base Docs:** [PRD-Personal-Expense-Tracker.md](PRD-Personal-Expense-Tracker.md), [TECHNICAL-SPECIFICATION.md](TECHNICAL-SPECIFICATION.md), [DATABASE.md](DATABASE.md), [DECISIONS.md](DECISIONS.md)
 
@@ -8,71 +8,83 @@
 
 ## 1. Overview
 
-This document defines the deployment lifecycle, migration strategy, and operational procedures (backup, recovery, and rollback) for the Personal Expense Tracker application.
+The application architecture is deployed as two independent container services on **Coolify** / Docker:
 
-The application architecture consists of:
-- **SvelteKit Frontend:** Hosted on static/node hosting (e.g. Vercel / Netlify / Self-hosted container).
-- **Supabase Backend:** PostgreSQL database, Auth, RLS policies, and Edge Functions.
-- **Reporting Layer:** Google Spreadsheet synced via Edge Function.
-
----
-
-## 2. Environment Management
-
-Environments are separated by **distinct Supabase Projects**:
-- **Development Project:** Used for local testing and feature branches.
-- **Production Project:** Dedicated project for live application data.
+1. **`moneh-gateway` (Fastify API Gateway):**
+   - Node.js 22 Alpine multi-stage Docker container.
+   - Internal/External port: `4000` (configurable via `PORT`).
+   - Hosts all Supabase DB migrations, Actual Budget SDK connections, Saga dual-write orchestrator, and Google Sheets sync triggers.
+2. **`tracker-moneh` (SvelteKit Frontend):**
+   - Node.js 22 Alpine multi-stage Docker container.
+   - Internal/External port: `3004` (configurable via `PORT`).
+   - Calls `PUBLIC_GATEWAY_URL` exclusively.
 
 ---
 
-## 3. Standard Deployment Sequence
+## 2. Environment Configuration Matrix
 
-Database schema migrations **must always** be executed before deploying frontend application builds.
+### 2.1 Gateway (`moneh-gateway/.env`)
+```env
+PORT=4000
+HOST=0.0.0.0
+SUPABASE_URL=https://your-project.supabase.co
+PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+CLIENT_ORIGIN=https://tracker.novianlabs.my.id,http://localhost:3004,http://localhost:5173
 
-```text
-git pull
-   │
-   ▼
-supabase db push
-   │
-   ▼
-npm install
-   │
-   ▼
-npm run build
-   │
-   ▼
-Restart Application
+# Feature Flag: Set to true when ready to sync with Actual Budget
+USE_ACTUAL=false
+
+# Actual Budget Configuration
+ACTUAL_SERVER_URL=https://budget.novianlabs.my.id
+ACTUAL_PASSWORD=your-actual-password
+ACTUAL_SYNC_ID=your-sync-id
+ACTUAL_DATA_DIR=./budget-data
+
+# Reconciliation Configuration
+RECONCILIATION_INTERVAL_MS=60000
+RECONCILIATION_GRACE_PERIOD_MS=120000
+MAX_RECONCILIATION_RETRIES=3
 ```
 
-### Execution Steps:
-
-1. **Pull Main Codebase:**
-   ```bash
-   git pull origin main
-   ```
-2. **Apply Pending Database Migrations:**
-   ```bash
-   supabase db push
-   ```
-   *Ensures new tables, views, RPCs, or columns exist before application code references them.*
-3. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
-4. **Build Production Frontend:**
-   ```bash
-   npm run build
-   ```
-5. **Restart Server / Refresh Container Service.**
+### 2.2 Frontend (`tracker-moneh/.env`)
+```env
+PORT=3004
+PUBLIC_GATEWAY_URL=https://moneh-gateway.novianlabs.my.id # or http://localhost:4000
+ENABLE_SYNC=true
+ENABLE_DEBUG=false
+```
 
 ---
 
-## 4. Edge Functions Deployment
+## 3. Coolify Deployment Steps
 
-Deploy updated Edge Functions independently using Supabase CLI:
+### 3.1 Deploying `moneh-gateway`
+1. Create a new Service in Coolify $\rightarrow$ Select Git Repository (`moneh-gateway`).
+2. Set Build Pack: **Dockerfile**.
+3. Set Port: **4000** (Healthcheck endpoint: `/api/health`).
+4. Set Environment Variables as defined above.
+5. Trigger Deploy.
+
+### 3.2 Deploying `tracker-moneh`
+1. Create a new Service in Coolify $\rightarrow$ Select Git Repository (`tracker-moneh`).
+2. Set Build Pack: **Dockerfile**.
+3. Set Port: **3004**.
+4. Set Environment Variables (`PUBLIC_GATEWAY_URL`, `PORT=3004`).
+5. Trigger Deploy.
+
+---
+
+## 4. Standard Migration & Deployment Sequence
+
+Database schema migrations are located in `moneh-gateway/supabase/migrations/` and must be applied before frontend releases:
 
 ```bash
+cd moneh-gateway
+
+# Apply database migrations
+supabase db push
+
+# Deploy edge functions
 supabase functions deploy sync-google-sheets
 ```
 
@@ -107,20 +119,3 @@ supabase secrets set GOOGLE_SERVICE_ACCOUNT_EMAIL="..." GOOGLE_PRIVATE_KEY="..."
    - Migrations should always be additive.
    - If a rollback requires reverting schema changes, create a new compensating migration file (`supabase migration new revert_<feature>`) and apply via `supabase db push`.
    - Never manually drop production tables.
-
----
-
-## 6. Coolify & Docker Deployment Guide
-
-### 6.1 Configuration in Coolify
-1. **New Resource:** Select **Public/Private Repository** or **Dockerfile** build pack.
-2. **Port:** Expose port `3000`.
-3. **Environment Variables & Build Arguments:**
-   - `PUBLIC_SUPABASE_URL`: Your Supabase project URL (e.g. `https://xxx.supabase.co`).
-   - `PUBLIC_SUPABASE_ANON_KEY`: Your Supabase public anon key.
-   - `ORIGIN`: The public HTTPS URL where your app is hosted (e.g. `https://moneh.yourdomain.com`).
-   - `ENABLE_SYNC`: `true`
-   - `ENABLE_DEBUG`: `false`
-
-*Note: In Coolify, ensure environment variables marked as build variables or passed as ARGs during image build.*
-
