@@ -6,7 +6,7 @@
 	import { authService } from '$lib/services/auth';
 	import { currentUser, checkAuth } from '$lib/stores/auth';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
-	import { Wallet, LayoutDashboard, Receipt, Tag, CreditCard, RefreshCw, LogOut, LogIn } from 'lucide-svelte';
+	import { Wallet, LayoutDashboard, Receipt, Tag, CreditCard, RefreshCw, LogOut, LogIn, Settings } from 'lucide-svelte';
 
 	export let data;
 
@@ -34,7 +34,8 @@
 		{ href: '/expenses', label: 'Expenses', icon: Receipt },
 		{ href: '/categories', label: 'Categories', icon: Tag },
 		{ href: '/payment-methods', label: 'Payment Methods', icon: CreditCard },
-		{ href: '/sync', label: 'Sync & Logs', icon: RefreshCw }
+		{ href: '/sync', label: 'Sync & Logs', icon: RefreshCw },
+		{ href: '/settings', label: 'Settings', icon: Settings }
 	];
 
 	async function handleSignOut() {
