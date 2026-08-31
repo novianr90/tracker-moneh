@@ -1,6 +1,9 @@
+import { apiFetch } from './apiClient';
+
 export interface AppConfig {
 	useActual: boolean;
-	version: string;
+	version?: string;
+	actualSyncId?: string | null;
 }
 
 export const configService = {
@@ -13,6 +16,13 @@ export const configService = {
 		} catch (e) {
 			console.warn('Failed to load gateway config, defaulting to standalone:', e);
 		}
-		return { useActual: false, version: '1.0.0' };
+		return { useActual: false, actualSyncId: null, version: '1.0.0' };
+	},
+
+	async setActualSyncId(actualSyncId: string | null): Promise<AppConfig> {
+		return await apiFetch('/api/config/actual-sync-id', {
+			method: 'PUT',
+			body: JSON.stringify({ actualSyncId })
+		});
 	}
 };
