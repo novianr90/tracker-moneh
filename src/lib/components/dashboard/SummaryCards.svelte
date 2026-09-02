@@ -2,6 +2,7 @@
 	import { formatIDR } from '$lib/utils/formatters';
 	import type { MonthlySummary } from '$lib/services/expenses';
 	import { Wallet, Calendar, TrendingUp, TrendingDown } from 'lucide-svelte';
+	import Card from '$lib/components/ui/Card.svelte';
 
 	export let summary: MonthlySummary = {
 		total_amount: 0,
@@ -16,7 +17,7 @@
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 	<!-- Total Month Expense -->
-	<div class="p-5 bg-card border border-border rounded-lg shadow-sm space-y-2">
+	<Card class="space-y-2">
 		<div class="flex items-center justify-between text-muted-foreground">
 			<span class="text-xs font-medium uppercase tracking-wider">This Month</span>
 			<div class="p-2 bg-primary/10 rounded-lg text-primary">
@@ -40,10 +41,10 @@
 			{/if}
 			<span class="text-muted-foreground">vs last month</span>
 		</div>
-	</div>
+	</Card>
 
 	<!-- Total Transactions -->
-	<div class="p-5 bg-card border border-border rounded-lg shadow-sm space-y-2">
+	<Card class="space-y-2">
 		<div class="flex items-center justify-between text-muted-foreground">
 			<span class="text-xs font-medium uppercase tracking-wider">Transactions</span>
 			<div class="p-2 bg-secondary rounded-lg text-foreground">
@@ -54,10 +55,10 @@
 			{summary.transaction_count}
 		</div>
 		<p class="text-xs text-muted-foreground">Recorded expenses this month</p>
-	</div>
+	</Card>
 
 	<!-- Previous Month Comparison -->
-	<div class="p-5 bg-card border border-border rounded-lg shadow-sm space-y-2">
+	<Card class="space-y-2">
 		<div class="flex items-center justify-between text-muted-foreground">
 			<span class="text-xs font-medium uppercase tracking-wider">Last Month Total</span>
 			<div class="p-2 bg-accent rounded-lg text-accent-foreground">
@@ -68,5 +69,5 @@
 			{formatIDR(summary.prev_month_total)}
 		</div>
 		<p class="text-xs text-muted-foreground">Benchmark monthly total</p>
-	</div>
+	</Card>
 </div>

@@ -14,13 +14,16 @@
 		XCircle,
 		Clock,
 		FileSpreadsheet,
-		Loader2,
 		AlertCircle,
 		ShieldCheck,
 		DatabaseZap,
-		Layers,
 		ArrowDownToLine
 	} from 'lucide-svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	// State for Actual Budget Sync
 	let actualStatus: ActualSyncStatusSummary = { synced: 0, pending: 0, reconciling: 0, failed: 0, total: 0 };
@@ -119,20 +122,14 @@
 
 <div class="space-y-8">
 	<!-- Page Header -->
-	<div>
-		<h1 class="text-2xl font-black text-foreground flex items-center gap-2">
-			<RefreshCw class="w-6 h-6 text-primary" />
-			Synchronization & Reconciliation Hub
-		</h1>
-		<p class="text-xs text-muted-foreground">Manage dual-synchronization with Actual Budget (System of Record) and Google Sheets (Reporting Layer)</p>
-	</div>
+	<PageHeader icon={RefreshCw} title="Synchronization & Reconciliation Hub" description="Manage dual-synchronization with Actual Budget (System of Record) and Google Sheets (Reporting Layer)" />
 
 	<!-- SECTION 1: Actual Budget Synchronization & Master Data -->
-	<div class="p-6 bg-card border border-border rounded-xl shadow-lg space-y-6">
+	<Card class="space-y-6">
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
-				<h2 class="text-md font-bold text-foreground flex items-center gap-2">
-					<DatabaseZap class="w-5 h-5 text-primary" />
+				<h2 class="text-md font-heading font-bold text-foreground flex items-center gap-2">
+					<DatabaseZap class="w-5 h-5 text-primary" aria-hidden="true" />
 					Actual Budget (Financial System of Record)
 				</h2>
 				<p class="text-xs text-muted-foreground max-w-xl">
@@ -141,22 +138,13 @@
 			</div>
 
 			{#if actualStatus.enabled === false}
-				<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
-					Disabled (USE_ACTUAL=false)
-				</span>
+				<Badge variant="neutral">Disabled (USE_ACTUAL=false)</Badge>
 			{:else}
-				<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
-					<ShieldCheck class="w-4 h-4" /> Active Saga Sync
-				</span>
+				<Badge variant="success">
+					<ShieldCheck slot="icon" class="w-4 h-4" aria-hidden="true" /> Active Saga Sync
+				</Badge>
 			{/if}
 		</div>
-
-		{#if actualStatus.enabled === false}
-			<div class="p-3 text-xs bg-warning/10 border border-warning/30 text-warning rounded-lg flex items-center gap-2">
-				<AlertCircle class="w-4 h-4 text-warning flex-shrink-0" />
-				<span>Actual Budget transaction synchronization is paused (<code>USE_ACTUAL=false</code>). You can still import/sync Master Data (categories & accounts) anytime below so your dropdowns match Actual Budget.</span>
-			</div>
-		{/if}
 
 		<!-- Status Metrics Cards -->
 		<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -177,6 +165,13 @@
 				<div class="text-xl font-bold text-destructive">{actualStatus.failed}</div>
 			</div>
 		</div>
+
+		{#if actualStatus.enabled === false}
+			<div class="p-3 text-xs bg-warning/10 border border-warning/30 text-warning rounded-lg flex items-center gap-2">
+				<AlertCircle class="w-4 h-4 text-warning flex-shrink-0" aria-hidden="true" />
+				<span>Actual Budget transaction synchronization is paused (<code>USE_ACTUAL=false</code>). You can still import/sync Master Data (categories & accounts) anytime below so your dropdowns match Actual Budget.</span>
+			</div>
+		{/if}
 
 		{#if actualStatusMsg}
 			<div class="p-3 text-xs bg-success/20 border border-success/50 text-success rounded-lg flex items-center gap-2">
@@ -208,38 +203,31 @@
 
 		<!-- Action Buttons -->
 		<div class="flex flex-wrap gap-3">
-			<button
-				on:click={handleSyncMasterData}
-				disabled={syncingMaster}
-				class="px-5 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground font-semibold text-xs rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 border border-border"
-			>
-				{#if syncingMaster}
-					<Loader2 class="w-4 h-4 animate-spin text-primary" /> Importing Master Data...
-				{:else}
-					<ArrowDownToLine class="w-4 h-4 text-primary" /> Sync Categories & Accounts from Actual
-				{/if}
-			</button>
+			<Button variant="secondary" size="sm" loading={syncingMaster} on:click={handleSyncMasterData} class="px-5 py-2.5">
+				<ArrowDownToLine slot="icon" class="w-4 h-4 text-primary" aria-hidden="true" />
+				{syncingMaster ? 'Importing Master Data...' : 'Sync Categories & Accounts from Actual'}
+			</Button>
 
-			<button
+			<Button
+				variant="primary"
+				size="sm"
+				loading={reconcilingActual}
+				disabled={actualStatus.enabled === false}
 				on:click={handleReconcileActual}
-				disabled={reconcilingActual || actualStatus.enabled === false}
-				class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+				class="px-5 py-2.5"
 			>
-				{#if reconcilingActual}
-					<Loader2 class="w-4 h-4 animate-spin" /> Running Reconciliation Engine...
-				{:else}
-					<RefreshCw class="w-4 h-4" /> Trigger Actual Budget Reconciliation
-				{/if}
-			</button>
+				<RefreshCw slot="icon" class="w-4 h-4" aria-hidden="true" />
+				{reconcilingActual ? 'Running Reconciliation Engine...' : 'Trigger Actual Budget Reconciliation'}
+			</Button>
 		</div>
-	</div>
+	</Card>
 
 	<!-- SECTION 2: Google Spreadsheet Reporting Layer (Preserved) -->
-	<div class="p-6 bg-card border border-border rounded-xl shadow-lg space-y-6">
+	<Card class="space-y-6">
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
-				<h2 class="text-md font-bold text-foreground flex items-center gap-2">
-					<FileSpreadsheet class="w-5 h-5 text-success" />
+				<h2 class="text-md font-heading font-bold text-foreground flex items-center gap-2">
+					<FileSpreadsheet class="w-5 h-5 text-success" aria-hidden="true" />
 					Google Spreadsheet (Reporting & Analytics)
 				</h2>
 				<p class="text-xs text-muted-foreground max-w-xl">
@@ -262,26 +250,19 @@
 			</div>
 		{/if}
 
-		<button
-			on:click={handleTriggerSheetsSync}
-			disabled={syncingSheets}
-			class="px-6 py-3 bg-success hover:bg-success/90 text-success-foreground font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-		>
-			{#if syncingSheets}
-				<Loader2 class="w-5 h-5 animate-spin" /> Syncing to Google Spreadsheet...
-			{:else}
-				<RefreshCw class="w-5 h-5" /> Sync to Spreadsheet Now
-			{/if}
-		</button>
-	</div>
+		<Button variant="primary" loading={syncingSheets} on:click={handleTriggerSheetsSync} class="px-6 py-3 bg-success hover:bg-success/90 text-success-foreground">
+			<RefreshCw slot="icon" class="w-5 h-5" aria-hidden="true" />
+			{syncingSheets ? 'Syncing to Google Spreadsheet...' : 'Sync to Spreadsheet Now'}
+		</Button>
+	</Card>
 
 	<!-- SECTION 3: Google Sheets Sync Logs & Cron Jobs -->
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 		<!-- Sync Logs Table -->
-		<div class="lg:col-span-2 bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+		<Card padding={false} class="lg:col-span-2 overflow-hidden">
 			<div class="p-4 border-b border-border flex items-center justify-between">
-				<h3 class="text-sm font-bold text-foreground flex items-center gap-2">
-					<Clock class="w-4 h-4 text-primary" />
+				<h3 class="text-sm font-heading font-bold text-foreground flex items-center gap-2">
+					<Clock class="w-4 h-4 text-primary" aria-hidden="true" />
 					Spreadsheet Sync Logs
 				</h3>
 				<span class="text-[10px] text-muted-foreground">Recent executions</span>
@@ -333,12 +314,12 @@
 					</tbody>
 				</table>
 			</div>
-		</div>
+		</Card>
 
 		<!-- Active Cron Jobs -->
-		<div class="bg-card border border-border rounded-xl shadow-sm p-4 space-y-4">
-			<h3 class="text-sm font-bold text-foreground flex items-center gap-2">
-				<Clock class="w-4 h-4 text-primary" />
+		<Card class="space-y-4">
+			<h3 class="text-sm font-heading font-bold text-foreground flex items-center gap-2">
+				<Clock class="w-4 h-4 text-primary" aria-hidden="true" />
 				Scheduled Cron Jobs
 			</h3>
 			<p class="text-xs text-muted-foreground">Automated edge background sync schedules in Supabase pg_cron</p>
@@ -366,6 +347,6 @@
 					{/each}
 				{/if}
 			</div>
-		</div>
+		</Card>
 	</div>
 </div>

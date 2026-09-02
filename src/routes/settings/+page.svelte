@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { configService, type AppConfig } from '$lib/services/config';
-	import { Settings, Save, Loader2, CheckCircle2, AlertTriangle } from 'lucide-svelte';
+	import { Settings, Save, CheckCircle2, AlertTriangle } from 'lucide-svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let loading = true;
 	let saving = false;
@@ -43,19 +46,13 @@
 
 <div class="space-y-6 max-w-xl">
 	<!-- Page Header -->
-	<div>
-		<h1 class="text-2xl font-black text-foreground flex items-center gap-2">
-			<Settings class="w-6 h-6 text-primary" />
-			Settings
-		</h1>
-		<p class="text-xs text-muted-foreground">Manage your personal Actual Budget connection</p>
-	</div>
+	<PageHeader icon={Settings} title="Settings" description="Manage your personal Actual Budget connection" />
 
 	{#if loading}
 		<div class="text-center py-6 text-xs text-muted-foreground">Loading configuration...</div>
 	{:else}
-		<div class="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
-			<h2 class="text-sm font-bold text-foreground">Actual Budget Sync ID</h2>
+		<Card class="space-y-4">
+			<h2 class="text-sm font-heading font-semibold text-foreground">Actual Budget Sync ID</h2>
 
 			{#if !cfg.useActual}
 				<div class="p-3 bg-muted/50 border border-border rounded-lg text-xs text-muted-foreground">
@@ -63,8 +60,8 @@
 					Expenses are tracked in Tracker only.
 				</div>
 			{:else if !cfg.actualSyncId}
-				<div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400">
-					<AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" />
+				<div class="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-start gap-2 text-xs text-warning">
+					<AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
 					<span>Your Actual sync ID is empty. Set it below to start syncing your expenses to your own Actual Budget.</span>
 				</div>
 			{/if}
@@ -76,7 +73,7 @@
 			{/if}
 			{#if successMsg}
 				<div class="p-2.5 text-xs bg-primary/10 border border-primary/20 text-primary rounded-lg flex items-center gap-1.5">
-					<CheckCircle2 class="w-4 h-4" /> {successMsg}
+					<CheckCircle2 class="w-4 h-4" aria-hidden="true" /> {successMsg}
 				</div>
 			{/if}
 
@@ -98,18 +95,11 @@
 					</p>
 				</div>
 
-				<button
-					type="submit"
-					disabled={saving || !cfg.useActual}
-					class="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
-				>
-					{#if saving}
-						<Loader2 class="w-4 h-4 animate-spin" /> Saving...
-					{:else}
-						<Save class="w-4 h-4" /> Save
-					{/if}
-				</button>
+				<Button type="submit" variant="primary" size="sm" loading={saving} disabled={!cfg.useActual} class="w-full">
+					<Save slot="icon" class="w-4 h-4" aria-hidden="true" />
+					{saving ? 'Saving...' : 'Save'}
+				</Button>
 			</form>
-		</div>
+		</Card>
 	{/if}
 </div>

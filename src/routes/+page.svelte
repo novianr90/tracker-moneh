@@ -5,6 +5,8 @@
 	import ExpenseTrendChart from '$lib/components/dashboard/ExpenseTrendChart.svelte';
 	import CategoryChart from '$lib/components/dashboard/CategoryChart.svelte';
 	import RecentTransactions from '$lib/components/dashboard/RecentTransactions.svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import { LayoutDashboard, Loader2 } from 'lucide-svelte';
 	import { expenseService, type MonthlySummary, type CategoryBreakdown, type RecentExpenseView } from '$lib/services/expenses';
 
 	let summary: MonthlySummary = { total_amount: 0, transaction_count: 0, prev_month_total: 0 };
@@ -38,12 +40,15 @@
 
 <div class="space-y-6">
 	<!-- Page Banner / Header -->
-	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-		<div>
-			<h1 class="text-2xl font-black tracking-tight text-foreground">Dashboard</h1>
-			<p class="text-xs text-muted-foreground">Track expenses rapidly and review monthly summaries</p>
-		</div>
-	</div>
+	<PageHeader icon={LayoutDashboard} title="Dashboard" description="Track expenses rapidly and review monthly summaries">
+		<svelte:fragment slot="actions">
+			{#if loading}
+				<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
+					<Loader2 class="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> Refreshing...
+				</span>
+			{/if}
+		</svelte:fragment>
+	</PageHeader>
 
 	<!-- Rapid Expense Entry Form Component -->
 	<ExpenseForm onSuccess={loadDashboardData} />
