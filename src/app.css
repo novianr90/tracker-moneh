@@ -5,6 +5,7 @@
 @layer base {
   /* Light theme (default) */
   :root {
+    color-scheme: light;
     --background: 210 20% 98%;
     --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
@@ -35,6 +36,10 @@
 
   /* Dark theme */
   .dark {
+    /* Tells the browser to render native form controls (date/time picker icon,
+       scrollbars, checkboxes) using dark-appropriate colors instead of the
+       default black-on-dark calendar icon that becomes invisible. */
+    color-scheme: dark;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40.9% 98%;
     --card: 222.2 84% 6.9%;
