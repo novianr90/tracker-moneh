@@ -26,7 +26,7 @@ Supabase Operational Store           Actual Budget Server
         │ Edge Function                       │ REST / WebSocket
         ▼                                     ▼
 Google Spreadsheet Reporting             Local SQLite Cache
-  (Analytics & Review)               (budget.novianlabs.my.id)
+  (Analytics & Review)                   (actualbudget.com)
 ```
 
 ---
