@@ -33,6 +33,8 @@
 	let loading = false;
 	let errorMsg = '';
 	let successMsg = false;
+	let amountInvalid = false;
+	let categoryInvalid = false;
 
 	async function loadPaymentMethods() {
 		try {
@@ -105,15 +107,19 @@
 
 	async function handleSubmit() {
 		errorMsg = '';
+		amountInvalid = false;
+		categoryInvalid = false;
 		const parsedAmount = parseInt(amount.replace(/\D/g, ''), 10);
 
 		if (!parsedAmount || parsedAmount <= 0) {
 			errorMsg = 'EXP002: Please enter a valid amount > 0';
+			amountInvalid = true;
 			return;
 		}
 
 		if (!categoryId) {
 			errorMsg = 'EXP001: Please select a category';
+			categoryInvalid = true;
 			return;
 		}
 
@@ -188,7 +194,7 @@
 					placeholder="50.000"
 					bind:value={amount}
 					required
-					aria-invalid={!!errorMsg}
+					aria-invalid={amountInvalid}
 					class="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground font-semibold text-lg tabular-nums"
 				/>
 			</div>
@@ -201,6 +207,7 @@
 				id="category-select"
 				bind:value={categoryId}
 				required
+				aria-invalid={categoryInvalid}
 				class="w-full px-3 py-2.5 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
 			>
 				{#each categories as cat}

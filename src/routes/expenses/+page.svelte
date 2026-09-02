@@ -444,14 +444,14 @@
 												<CheckCircle2 slot="icon" class="w-3 h-3" aria-hidden="true" /> Synced
 											</Badge>
 										{:else if item.sync_status === 'RECONCILIATION_REQUIRED' || item.sync_status === 'ROLLBACK_PENDING'}
-											<Badge variant="info">
+											<Badge variant="info" title="Reconciling with Actual Budget">
 												<RefreshCw slot="icon" class="w-3 h-3 animate-spin" aria-hidden="true" />
-												<span title="Reconciling with Actual Budget">Reconciling</span>
+												Reconciling
 											</Badge>
 										{:else if item.sync_status === 'SYNC_FAILED'}
-											<Badge variant="danger">
+											<Badge variant="danger" title="{item.sync_error || 'Actual write failed'} ({item.sync_failure_type || 'Error'})">
 												<AlertTriangle slot="icon" class="w-3 h-3" aria-hidden="true" />
-												<span title="{item.sync_error || 'Actual write failed'} ({item.sync_failure_type || 'Error'})">Failed</span>
+												Failed
 											</Badge>
 										{:else}
 											<Badge variant="warning">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Loader2 } from 'lucide-svelte';
+	import { twMerge } from 'tailwind-merge';
 
 	export let variant: 'primary' | 'secondary' | 'ghost' | 'destructive' = 'primary';
 	export let size: 'sm' | 'md' | 'icon' = 'md';
@@ -30,7 +31,7 @@
 <button
 	{type}
 	disabled={disabled || loading}
-	class="{base} {variants[variant]} {sizes[size]} {className}"
+	class={twMerge(base, variants[variant], sizes[size], className)}
 	on:click
 	{...$$restProps}
 >

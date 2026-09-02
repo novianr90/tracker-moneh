@@ -153,6 +153,7 @@
 						{#if !isDefault && !useActual}
 							<button
 								on:click={() => handleDelete(item)}
+								title="Delete Payment Method"
 								aria-label={`Delete payment method ${item.name}`}
 								class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
 							>

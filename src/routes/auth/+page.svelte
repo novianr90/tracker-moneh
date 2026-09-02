@@ -11,10 +11,28 @@
 	let showPassword = false;
 	let loading = false;
 	let errorMsg = '';
+	let emailInvalid = false;
+	let passwordInvalid = false;
+
+	/**
+	 * Svelte 4 disallows a dynamic `type` on an <input> that also uses bind:value,
+	 * so the password field's type is set imperatively via this action instead of
+	 * swapping two separate <input> elements (which would drop focus/selection).
+	 */
+	function inputType(node: HTMLInputElement, type: string) {
+		node.type = type;
+		return {
+			update(type: string) {
+				node.type = type;
+			}
+		};
+	}
 
 	async function handleLogin() {
 		errorMsg = '';
-		if (!email || !password) {
+		emailInvalid = !email;
+		passwordInvalid = !password;
+		if (emailInvalid || passwordInvalid) {
 			errorMsg = 'Please enter both email and password';
 			return;
 		}
@@ -30,6 +48,8 @@
 			await goto('/');
 		} catch (err: any) {
 			errorMsg = err.message || 'AUTH001: Invalid email or password';
+			emailInvalid = true;
+			passwordInvalid = true;
 		} finally {
 			loading = false;
 		}
@@ -37,7 +57,7 @@
 </script>
 
 <div class="min-h-[75vh] flex items-center justify-center py-12 px-4">
-	<Card class="w-full max-w-md !p-8 space-y-6">
+	<Card class="w-full max-w-md p-8 space-y-6">
 		<div class="text-center space-y-2">
 			<Wallet class="w-7 h-7 text-primary mx-auto mb-1" aria-hidden="true" />
 			<h1 class="text-2xl font-heading font-semibold text-foreground">Welcome Back</h1>
@@ -60,7 +80,7 @@
 					bind:value={email}
 					placeholder="you@example.com"
 					required
-					aria-invalid={!!errorMsg}
+					aria-invalid={emailInvalid}
 					class="w-full px-3 py-2.5 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
 				/>
 			</div>
@@ -68,29 +88,17 @@
 			<div>
 				<label for="auth-password" class="block text-xs font-medium text-muted-foreground mb-1">Password</label>
 				<div class="relative">
-					{#if showPassword}
-						<input
-							id="auth-password"
-							type="text"
-							autocomplete="current-password"
-							bind:value={password}
-							placeholder="••••••••"
-							required
-							aria-invalid={!!errorMsg}
-							class="w-full px-3 py-2.5 pr-10 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-						/>
-					{:else}
-						<input
-							id="auth-password"
-							type="password"
-							autocomplete="current-password"
-							bind:value={password}
-							placeholder="••••••••"
-							required
-							aria-invalid={!!errorMsg}
-							class="w-full px-3 py-2.5 pr-10 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-						/>
-					{/if}
+					<input
+						id="auth-password"
+						type="password"
+						use:inputType={showPassword ? 'text' : 'password'}
+						autocomplete="current-password"
+						bind:value={password}
+						placeholder="••••••••"
+						required
+						aria-invalid={passwordInvalid}
+						class="w-full px-3 py-2.5 pr-10 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
+					/>
 					<button
 						type="button"
 						on:click={() => (showPassword = !showPassword)}

@@ -183,6 +183,7 @@
 						{#if !useActual}
 							<button
 								on:click={() => handleDelete(cat.id)}
+								title="Delete Category"
 								aria-label={`Delete category ${cat.name}`}
 								class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
 							>

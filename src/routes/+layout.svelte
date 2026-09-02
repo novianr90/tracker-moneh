@@ -72,7 +72,7 @@
 
 				<!-- Desktop Navigation -->
 				{#if user}
-					<nav class="hidden md:flex items-center gap-0.5 lg:gap-1 min-w-0">
+					<nav class="hidden md:flex items-center gap-0.5 lg:gap-1 min-w-0 overflow-x-auto">
 						{#each navItems as item}
 							{@const active = $page.url.pathname === item.href}
 							<a
@@ -80,10 +80,10 @@
 								title={item.label}
 								aria-label={item.label}
 								aria-current={active ? 'page' : undefined}
-								class="px-2 lg:px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap {active ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}"
+								class="px-2 lg:px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 {active ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}"
 							>
 								<svelte:component this={item.icon} class="w-4 h-4 shrink-0" aria-hidden="true" />
-								<span class="hidden lg:inline">{item.label}</span>
+								<span>{item.label}</span>
 							</a>
 						{/each}
 					</nav>
