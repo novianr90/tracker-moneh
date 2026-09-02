@@ -67,8 +67,24 @@
   * {
     @apply border-border;
   }
+  html,
+  body {
+    /* Defensive: nothing in the app should ever cause page-level horizontal scroll. */
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  /* Safety-net scroll on the desktop nav: functional if it ever overflows, invisible so it never reads as a bug. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
