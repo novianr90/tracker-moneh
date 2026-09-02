@@ -2,7 +2,12 @@
 	import { onMount } from 'svelte';
 	import { categoryService, type Category } from '$lib/services/categories';
 	import { configService } from '$lib/services/config';
-	import { Tag, Plus, Trash2, Loader2, Palette, Info } from 'lucide-svelte';
+	import { Tag, Plus, Trash2, Palette, Info } from 'lucide-svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	let categories: Category[] = [];
 	let loading = true;
@@ -22,7 +27,7 @@
 
 	async function loadCategories() {
 		loading = true;
-		
+
 		configService.getConfig().then(cfg => {
 			useActual = cfg.useActual;
 		}).catch(console.error);
@@ -77,19 +82,12 @@
 </script>
 
 <div class="space-y-6">
-	<!-- Page Header -->
-	<div>
-		<h1 class="text-2xl font-black text-foreground flex items-center gap-2">
-			<Tag class="w-6 h-6 text-primary" />
-			Master Categories
-		</h1>
-		<p class="text-xs text-muted-foreground">Manage custom categories, color tags, and icons</p>
-	</div>
+	<PageHeader icon={Tag} title="Master Categories" description="Manage custom categories, color tags, and icons" />
 
 	<!-- Info Notice if USE_ACTUAL=true -->
 	{#if useActual}
-		<div class="p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-start gap-3">
-			<Info class="w-5 h-5 text-primary shrink-0 mt-0.5" />
+		<div class="p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-3">
+			<Info class="w-5 h-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
 			<div class="text-xs space-y-1">
 				<p class="font-bold text-foreground">Master Data Dikelola oleh Actual Budget</p>
 				<p class="text-muted-foreground">
@@ -101,13 +99,13 @@
 
 	<!-- Create Category Form (Only visible when USE_ACTUAL=false) -->
 	{#if !useActual}
-		<div class="p-5 bg-card border border-border rounded-xl shadow-sm space-y-4">
-			<h2 class="text-sm font-bold text-foreground flex items-center gap-2">
-				<Plus class="w-4 h-4 text-primary" /> Add New Category
+		<Card class="space-y-4">
+			<h2 class="text-sm font-heading font-semibold text-foreground flex items-center gap-2">
+				<Plus class="w-4 h-4 text-primary" aria-hidden="true" /> Add New Category
 			</h2>
 
 			{#if errorMsg}
-				<div class="p-2.5 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
+				<div role="alert" class="p-2.5 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
 					{errorMsg}
 				</div>
 			{/if}
@@ -121,27 +119,31 @@
 						placeholder="e.g. Healthcare, Subscriptions"
 						bind:value={newName}
 						required
+						aria-invalid={!!errorMsg}
 						class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 					/>
 				</div>
 
 				<div>
 					<span class="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
-						<Palette class="w-3.5 h-3.5" /> Color Tag
+						<Palette class="w-3.5 h-3.5" aria-hidden="true" /> Color Tag
 					</span>
 					<div class="flex items-center gap-1.5 pt-1 flex-wrap">
 						{#each presetColors as color}
 							<button
 								type="button"
 								on:click={() => (newColor = color)}
-								class="w-5 h-5 rounded-full transition-transform {newColor === color ? 'scale-125 ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:scale-110'}"
+								aria-label={`Use color ${color}`}
+								aria-pressed={newColor === color}
+								class="w-6 h-6 rounded-full transition-transform {newColor === color ? 'scale-125 ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:scale-110'}"
 								style="background-color: {color};"
 							></button>
 						{/each}
-						<label title="Custom Color" class="relative cursor-pointer w-5 h-5 rounded-full border border-border flex items-center justify-center overflow-hidden hover:scale-110 transition-transform">
+						<label title="Custom Color" class="relative cursor-pointer w-6 h-6 rounded-full border border-border flex items-center justify-center overflow-hidden hover:scale-110 transition-transform">
 							<input
 								type="color"
 								bind:value={newColor}
+								aria-label="Custom color picker"
 								class="absolute -top-2 -left-2 w-8 h-8 cursor-pointer opacity-0"
 							/>
 							<span class="w-full h-full rounded-full" style="background-color: {newColor};"></span>
@@ -150,55 +152,47 @@
 				</div>
 
 				<div class="flex items-end">
-					<button
-						type="submit"
-						disabled={creating}
-						class="w-full py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
-					>
-						{#if creating}
-							<Loader2 class="w-4 h-4 animate-spin" /> Creating...
-						{:else}
-							<Plus class="w-4 h-4" /> Save Category
-						{/if}
-					</button>
+					<Button type="submit" variant="primary" size="md" loading={creating} class="w-full">
+						<Plus slot="icon" class="w-4 h-4" aria-hidden="true" />
+						{creating ? 'Creating...' : 'Save Category'}
+					</Button>
 				</div>
 			</form>
-		</div>
+		</Card>
 	{/if}
 
 	<!-- Categories Grid -->
-	<div class="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
-		<h2 class="text-sm font-bold text-foreground">Active Categories ({categories.length})</h2>
+	<Card class="space-y-4">
+		<h2 class="text-sm font-heading font-semibold text-foreground">Active Categories ({categories.length})</h2>
 
 		{#if loading}
 			<div class="text-center py-6 text-xs text-muted-foreground">Loading master categories...</div>
 		{:else if categories.length === 0}
-			<div class="text-center py-6 text-xs text-muted-foreground border border-dashed border-border rounded-lg">
-				No categories found. Create one above!
-			</div>
+			<EmptyState icon={Tag} message="No categories found." hint="Create one above to get started." />
 		{:else}
 			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
 				{#each categories as cat}
-					<div class="p-3 bg-secondary/40 border border-border rounded-lg flex items-center justify-between">
-						<div class="flex items-center gap-2.5">
-							<span class="w-4 h-4 rounded-full" style="background-color: {cat.color || '#6b7280'};"></span>
-							<span class="text-xs font-semibold {cat.is_active === false ? 'line-through text-muted-foreground' : 'text-foreground'}">{cat.name}</span>
+					<div class="p-3 bg-secondary/40 border border-border rounded-lg flex items-center justify-between gap-2">
+						<div class="flex items-center gap-2.5 min-w-0">
+							<span class="w-4 h-4 rounded-full shrink-0" style="background-color: {cat.color || '#6b7280'};" aria-hidden="true"></span>
+							<span class="text-xs font-semibold truncate {cat.is_active === false ? 'line-through text-muted-foreground' : 'text-foreground'}">{cat.name}</span>
 							{#if cat.is_active === false}
-								<span class="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">Inactive</span>
+								<Badge variant="neutral">Inactive</Badge>
 							{/if}
 						</div>
 						{#if !useActual}
 							<button
 								on:click={() => handleDelete(cat.id)}
 								title="Delete Category"
-								class="p-1 text-muted-foreground hover:text-destructive transition-colors"
+								aria-label={`Delete category ${cat.name}`}
+								class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
 							>
-								<Trash2 class="w-4 h-4" />
+								<Trash2 class="w-4 h-4" aria-hidden="true" />
 							</button>
 						{/if}
 					</div>
 				{/each}
 			</div>
 		{/if}
-	</div>
+	</Card>
 </div>
