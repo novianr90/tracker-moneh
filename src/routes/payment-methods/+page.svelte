@@ -2,7 +2,12 @@
 	import { onMount } from 'svelte';
 	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
 	import { configService } from '$lib/services/config';
-	import { CreditCard, Plus, Trash2, Loader2, Info } from 'lucide-svelte';
+	import { CreditCard, Plus, Trash2, Info } from 'lucide-svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	let paymentMethods: PaymentMethodItem[] = [];
 	let loading = true;
@@ -68,19 +73,12 @@
 </script>
 
 <div class="space-y-6">
-	<!-- Page Header -->
-	<div>
-		<h1 class="text-2xl font-black text-foreground flex items-center gap-2">
-			<CreditCard class="w-6 h-6 text-primary" />
-			Payment Methods & Wallets
-		</h1>
-		<p class="text-xs text-muted-foreground">Manage custom payment channels, bank accounts, and e-wallets</p>
-	</div>
+	<PageHeader icon={CreditCard} title="Payment Methods & Wallets" description="Manage custom payment channels, bank accounts, and e-wallets" />
 
 	<!-- Info Notice if USE_ACTUAL=true -->
 	{#if useActual}
-		<div class="p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-start gap-3">
-			<Info class="w-5 h-5 text-primary shrink-0 mt-0.5" />
+		<div class="p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-3">
+			<Info class="w-5 h-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
 			<div class="text-xs space-y-1">
 				<p class="font-bold text-foreground">Master Data Dikelola oleh Actual Budget</p>
 				<p class="text-muted-foreground">
@@ -92,13 +90,13 @@
 
 	<!-- Add Payment Method Form (Only visible when USE_ACTUAL=false) -->
 	{#if !useActual}
-		<div class="p-5 bg-card border border-border rounded-xl shadow-sm space-y-4">
-			<h2 class="text-sm font-bold text-foreground flex items-center gap-2">
-				<Plus class="w-4 h-4 text-primary" /> Add Custom Payment Method
+		<Card class="space-y-4">
+			<h2 class="text-sm font-heading font-semibold text-foreground flex items-center gap-2">
+				<Plus class="w-4 h-4 text-primary" aria-hidden="true" /> Add Custom Payment Method
 			</h2>
 
 			{#if errorMsg}
-				<div class="p-2.5 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
+				<div role="alert" class="p-2.5 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
 					{errorMsg}
 				</div>
 			{/if}
@@ -112,50 +110,42 @@
 						placeholder="e.g. SeaBank, Mandiri, ShopeePay, Crypto Wallet..."
 						bind:value={newName}
 						required
+						aria-invalid={!!errorMsg}
 						class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 					/>
 				</div>
 
-				<button
-					type="submit"
-					disabled={creating}
-					class="w-full sm:w-auto px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
-				>
-					{#if creating}
-						<Loader2 class="w-4 h-4 animate-spin" /> Adding...
-					{:else}
-						<Plus class="w-4 h-4" /> Add Method
-					{/if}
-				</button>
+				<Button type="submit" variant="primary" size="md" loading={creating} class="w-full sm:w-auto">
+					<Plus slot="icon" class="w-4 h-4" aria-hidden="true" />
+					{creating ? 'Adding...' : 'Add Method'}
+				</Button>
 			</form>
-		</div>
+		</Card>
 	{/if}
 
 	<!-- Payment Methods List -->
-	<div class="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
-		<h2 class="text-sm font-bold text-foreground">Available Payment Channels ({paymentMethods.length})</h2>
+	<Card class="space-y-4">
+		<h2 class="text-sm font-heading font-semibold text-foreground">Available Payment Channels ({paymentMethods.length})</h2>
 
 		{#if loading}
 			<div class="text-center py-6 text-xs text-muted-foreground">Loading payment methods...</div>
 		{:else if paymentMethods.length === 0}
-			<div class="text-center py-6 text-xs text-muted-foreground border border-dashed border-border rounded-lg">
-				No payment methods found. Add one above!
-			</div>
+			<EmptyState icon={CreditCard} message="No payment methods found." hint="Add one above to get started." />
 		{:else}
 			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
 				{#each paymentMethods as item}
 					{@const isDefault = item.id.startsWith('default-')}
-					<div class="p-3 bg-secondary/40 border border-border rounded-lg flex items-center justify-between">
-						<div class="flex items-center gap-2.5">
-							<div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+					<div class="p-3 bg-secondary/40 border border-border rounded-lg flex items-center justify-between gap-2">
+						<div class="flex items-center gap-2.5 min-w-0">
+							<div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0" aria-hidden="true">
 								{item.name.substring(0, 2).toUpperCase()}
 							</div>
-							<div>
-								<span class="text-xs font-semibold block {item.is_active === false ? 'line-through text-muted-foreground' : 'text-foreground'}">{item.name}</span>
+							<div class="min-w-0">
+								<span class="text-xs font-semibold block truncate {item.is_active === false ? 'line-through text-muted-foreground' : 'text-foreground'}">{item.name}</span>
 								<div class="flex items-center gap-1.5 mt-0.5">
 									<span class="text-[10px] text-muted-foreground">{isDefault ? 'Default' : 'Custom'}</span>
 									{#if item.is_active === false}
-										<span class="text-[9px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border">Inactive</span>
+										<Badge variant="neutral">Inactive</Badge>
 									{/if}
 								</div>
 							</div>
@@ -163,15 +153,15 @@
 						{#if !isDefault && !useActual}
 							<button
 								on:click={() => handleDelete(item)}
-								title="Delete Payment Method"
-								class="p-1 text-muted-foreground hover:text-destructive transition-colors"
+								aria-label={`Delete payment method ${item.name}`}
+								class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
 							>
-								<Trash2 class="w-4 h-4" />
+								<Trash2 class="w-4 h-4" aria-hidden="true" />
 							</button>
 						{/if}
 					</div>
 				{/each}
 			</div>
 		{/if}
-	</div>
+	</Card>
 </div>

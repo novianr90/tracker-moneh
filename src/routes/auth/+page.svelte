@@ -2,10 +2,13 @@
 	import { authService } from '$lib/services/auth';
 	import { currentUser } from '$lib/stores/auth';
 	import { goto, invalidateAll } from '$app/navigation';
-	import { Wallet, LogIn, Loader2, Lock } from 'lucide-svelte';
+	import { Wallet, Lock, Eye, EyeOff } from 'lucide-svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let email = '';
 	let password = '';
+	let showPassword = false;
 	let loading = false;
 	let errorMsg = '';
 
@@ -34,57 +37,79 @@
 </script>
 
 <div class="min-h-[75vh] flex items-center justify-center py-12 px-4">
-	<div class="w-full max-w-md bg-card border border-border rounded-2xl p-8 shadow-xl space-y-6">
+	<Card class="w-full max-w-md !p-8 space-y-6">
 		<div class="text-center space-y-2">
-			<div class="inline-flex p-3 rounded-2xl bg-primary/10 text-primary mb-2">
-				<Wallet class="w-8 h-8" />
-			</div>
-			<h1 class="text-2xl font-black text-foreground">Welcome Back</h1>
+			<Wallet class="w-7 h-7 text-primary mx-auto mb-1" aria-hidden="true" />
+			<h1 class="text-2xl font-heading font-semibold text-foreground">Welcome Back</h1>
 			<p class="text-xs text-muted-foreground">Sign in to your private personal expense tracker</p>
 		</div>
 
 		{#if errorMsg}
-			<div class="p-3 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
+			<div role="alert" class="p-3 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
 				{errorMsg}
 			</div>
 		{/if}
 
-		<form on:submit|preventDefault={handleLogin} class="space-y-4">
+		<form on:submit|preventDefault={handleLogin} class="space-y-4" novalidate>
 			<div>
 				<label for="auth-email" class="block text-xs font-medium text-muted-foreground mb-1">Email Address</label>
 				<input
 					id="auth-email"
 					type="email"
+					autocomplete="email"
 					bind:value={email}
 					placeholder="you@example.com"
 					required
+					aria-invalid={!!errorMsg}
 					class="w-full px-3 py-2.5 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
 				/>
 			</div>
 
 			<div>
 				<label for="auth-password" class="block text-xs font-medium text-muted-foreground mb-1">Password</label>
-				<input
-					id="auth-password"
-					type="password"
-					bind:value={password}
-					placeholder="••••••••"
-					required
-					class="w-full px-3 py-2.5 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-				/>
+				<div class="relative">
+					{#if showPassword}
+						<input
+							id="auth-password"
+							type="text"
+							autocomplete="current-password"
+							bind:value={password}
+							placeholder="••••••••"
+							required
+							aria-invalid={!!errorMsg}
+							class="w-full px-3 py-2.5 pr-10 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
+						/>
+					{:else}
+						<input
+							id="auth-password"
+							type="password"
+							autocomplete="current-password"
+							bind:value={password}
+							placeholder="••••••••"
+							required
+							aria-invalid={!!errorMsg}
+							class="w-full px-3 py-2.5 pr-10 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
+						/>
+					{/if}
+					<button
+						type="button"
+						on:click={() => (showPassword = !showPassword)}
+						aria-label={showPassword ? 'Hide password' : 'Show password'}
+						class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+					>
+						{#if showPassword}
+							<EyeOff class="w-4 h-4" aria-hidden="true" />
+						{:else}
+							<Eye class="w-4 h-4" aria-hidden="true" />
+						{/if}
+					</button>
+				</div>
 			</div>
 
-			<button
-				type="submit"
-				disabled={loading}
-				class="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-			>
-				{#if loading}
-					<Loader2 class="w-4 h-4 animate-spin" /> Signing In...
-				{:else}
-					<Lock class="w-4 h-4" /> Sign In
-				{/if}
-			</button>
+			<Button type="submit" variant="primary" size="md" {loading} class="w-full font-bold">
+				<Lock slot="icon" class="w-4 h-4" aria-hidden="true" />
+				{loading ? 'Signing In...' : 'Sign In'}
+			</Button>
 		</form>
-	</div>
+	</Card>
 </div>
