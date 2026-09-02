@@ -88,7 +88,7 @@
 	});
 </script>
 
-<div class="p-6 bg-card border border-border rounded-xl shadow-lg space-y-5">
+<div class="p-6 bg-card border border-border rounded-lg shadow-lg space-y-5">
 	<!-- Card Header & Controls -->
 	<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
 		<div>
@@ -158,7 +158,7 @@
 				<div class="text-[11px] text-muted-foreground font-medium">Daily Average</div>
 				<div class="text-sm font-bold text-foreground">{formatIDR(avgDailySpend)} / day</div>
 			</div>
-			<div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs">
+			<div class="w-8 h-8 rounded-lg bg-success/10 text-success flex items-center justify-center font-bold text-xs">
 				Avg
 			</div>
 		</div>
@@ -174,7 +174,7 @@
 					{/if}
 				</div>
 			</div>
-			<div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+			<div class="w-8 h-8 rounded-lg bg-warning/10 text-warning flex items-center justify-center">
 				<Calendar class="w-4 h-4" />
 			</div>
 		</div>

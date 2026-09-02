@@ -13,7 +13,6 @@
 		Check,
 		X,
 		Loader2,
-		Calendar,
 		FileSpreadsheet,
 		ChevronLeft,
 		ChevronRight,
@@ -22,6 +21,11 @@
 		AlertTriangle,
 		Clock
 	} from 'lucide-svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	let expenses: RecentExpenseView[] = [];
 	let categories: Category[] = [];
@@ -202,30 +206,19 @@
 </script>
 
 <div class="space-y-6">
-	<!-- Page Header -->
-	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-		<div>
-			<h1 class="text-2xl font-black text-foreground flex items-center gap-2">
-				<Receipt class="w-6 h-6 text-primary" />
-				Expense History
-			</h1>
-			<p class="text-xs text-muted-foreground">Filter, search, edit, and observe synchronization with Actual Budget & Google Sheets</p>
-		</div>
-
-		<button
-			on:click={handleExportCSV}
-			disabled={expenses.length === 0}
-			class="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground font-semibold text-xs rounded-lg transition-colors flex items-center gap-2 self-start sm:self-auto disabled:opacity-50"
-		>
-			<FileSpreadsheet class="w-4 h-4 text-emerald-400" />
-			Export CSV
-		</button>
-	</div>
+	<PageHeader icon={Receipt} title="Expense History" description="Filter, search, edit, and observe synchronization with Actual Budget & Google Sheets">
+		<svelte:fragment slot="actions">
+			<Button variant="secondary" size="sm" on:click={handleExportCSV} disabled={expenses.length === 0}>
+				<FileSpreadsheet slot="icon" class="w-4 h-4 text-success" aria-hidden="true" />
+				Export CSV
+			</Button>
+		</svelte:fragment>
+	</PageHeader>
 
 	<!-- Filter Controls Card -->
-	<div class="p-4 bg-card border border-border rounded-xl shadow-sm space-y-3">
+	<Card class="space-y-3">
 		<div class="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-			<Filter class="w-4 h-4 text-primary" /> Filter Transactions
+			<Filter class="w-4 h-4 text-primary" aria-hidden="true" /> Filter Transactions
 		</div>
 
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
@@ -235,6 +228,7 @@
 				<input
 					type="text"
 					placeholder="Search description..."
+					aria-label="Search description"
 					bind:value={searchKey}
 					on:input={handleFilterChange}
 					class="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -246,6 +240,7 @@
 				<select
 					bind:value={categoryId}
 					on:change={handleFilterChange}
+					aria-label="Filter by category"
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				>
 					<option value="">All Categories</option>
@@ -260,6 +255,7 @@
 				<select
 					bind:value={paymentMethodFilter}
 					on:change={handleFilterChange}
+					aria-label="Filter by payment method"
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				>
 					<option value="">All Payment Methods</option>
@@ -275,6 +271,7 @@
 					type="date"
 					bind:value={startDate}
 					on:change={handleFilterChange}
+					aria-label="Filter from date"
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				/>
 			</div>
@@ -285,18 +282,19 @@
 					type="date"
 					bind:value={endDate}
 					on:change={handleFilterChange}
+					aria-label="Filter to date"
 					class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 				/>
 			</div>
 		</div>
-	</div>
+	</Card>
 
 	<!-- Expenses Table List -->
-	<div class="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+	<div class="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
 		{#if loading}
 			<div class="p-8 text-center text-xs text-muted-foreground">Loading transactions...</div>
 		{:else if expenses.length === 0}
-			<div class="p-8 text-center text-xs text-muted-foreground">No expenses found matching current filters.</div>
+			<EmptyState icon={Receipt} message="No expenses found." hint="Try adjusting your filters, or add a new expense from the dashboard." />
 		{:else}
 			<div class="overflow-x-auto">
 				<table class="w-full text-left text-xs text-foreground">
@@ -372,7 +370,8 @@
 											type="number"
 											bind:value={editForm.amount}
 											min="1"
-											class="w-28 text-right px-2 py-1 bg-background border border-input rounded text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+											aria-label="Amount"
+											class="w-28 text-right px-2 py-1 bg-background border border-input rounded text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary tabular-nums"
 										/>
 									</td>
 
@@ -393,21 +392,23 @@
 												on:click={() => handleSaveEdit(item.id)}
 												disabled={savingId === item.id}
 												title="Save"
-												class="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md transition-colors disabled:opacity-50"
+												aria-label="Save expense"
+												class="p-2 bg-success hover:bg-success/90 text-success-foreground rounded-md transition-colors disabled:opacity-50"
 											>
 												{#if savingId === item.id}
-													<Loader2 class="w-4 h-4 animate-spin" />
+													<Loader2 class="w-4 h-4 animate-spin" aria-hidden="true" />
 												{:else}
-													<Check class="w-4 h-4" />
+													<Check class="w-4 h-4" aria-hidden="true" />
 												{/if}
 											</button>
 											<button
 												on:click={handleCancelEdit}
 												disabled={savingId === item.id}
 												title="Cancel"
-												class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50"
+												aria-label="Cancel edit"
+												class="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50"
 											>
-												<X class="w-4 h-4" />
+												<X class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 									</td>
@@ -434,39 +435,37 @@
 											{item.description || (item.payee ? '' : '-')}
 										</div>
 									</td>
-									<td class="p-3 font-bold text-right whitespace-nowrap">{formatIDR(item.amount)}</td>
+									<td class="p-3 font-bold text-right whitespace-nowrap tabular-nums">{formatIDR(item.amount)}</td>
 
 									<!-- Actual Budget Status Badge -->
 									<td class="p-3 text-center whitespace-nowrap">
 										{#if item.sync_status === 'SYNCED'}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-												<CheckCircle2 class="w-3 h-3 text-emerald-500" /> Synced
-											</span>
+											<Badge variant="success">
+												<CheckCircle2 slot="icon" class="w-3 h-3" aria-hidden="true" /> Synced
+											</Badge>
 										{:else if item.sync_status === 'RECONCILIATION_REQUIRED' || item.sync_status === 'ROLLBACK_PENDING'}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-600 border border-sky-500/20" title="Reconciling with Actual Budget">
-												<RefreshCw class="w-3 h-3 animate-spin text-sky-500" /> Reconciling
-											</span>
+											<Badge variant="info" title="Reconciling with Actual Budget">
+												<RefreshCw slot="icon" class="w-3 h-3 animate-spin" aria-hidden="true" />
+												Reconciling
+											</Badge>
 										{:else if item.sync_status === 'SYNC_FAILED'}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20" title="{item.sync_error || 'Actual write failed'} ({item.sync_failure_type || 'Error'})">
-												<AlertTriangle class="w-3 h-3 text-rose-500" /> Failed
-											</span>
+											<Badge variant="danger" title="{item.sync_error || 'Actual write failed'} ({item.sync_failure_type || 'Error'})">
+												<AlertTriangle slot="icon" class="w-3 h-3" aria-hidden="true" />
+												Failed
+											</Badge>
 										{:else}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-												<Clock class="w-3 h-3 text-amber-500" /> Pending
-											</span>
+											<Badge variant="warning">
+												<Clock slot="icon" class="w-3 h-3" aria-hidden="true" /> Pending
+											</Badge>
 										{/if}
 									</td>
 
 									<!-- Sheets Status -->
 									<td class="p-3 text-center whitespace-nowrap">
 										{#if item.is_upload === 'Y'}
-											<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-emerald-600 bg-emerald-500/10">
-												Uploaded
-											</span>
+											<Badge variant="success">Uploaded</Badge>
 										{:else}
-											<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-muted-foreground bg-secondary">
-												Pending
-											</span>
+											<Badge variant="neutral">Pending</Badge>
 										{/if}
 									</td>
 
@@ -477,12 +476,13 @@
 													on:click={() => handleRetry(item.id)}
 													disabled={retryingId === item.id}
 													title="Retry Actual Budget Sync"
-													class="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 rounded-md transition-colors disabled:opacity-50"
+													aria-label="Retry Actual Budget sync"
+													class="p-2 text-warning hover:text-warning hover:bg-warning/10 rounded-md transition-colors disabled:opacity-50"
 												>
 													{#if retryingId === item.id}
-														<Loader2 class="w-4 h-4 animate-spin text-amber-400" />
+														<Loader2 class="w-4 h-4 animate-spin" aria-hidden="true" />
 													{:else}
-														<RefreshCw class="w-4 h-4 text-amber-400" />
+														<RefreshCw class="w-4 h-4" aria-hidden="true" />
 													{/if}
 												</button>
 											{/if}
@@ -491,16 +491,18 @@
 												on:click={() => handleStartEdit(item)}
 												disabled={item.is_upload === 'Y'}
 												title={item.is_upload === 'Y' ? 'Synced expenses cannot be edited' : 'Edit Expense'}
-												class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
+												aria-label={item.is_upload === 'Y' ? 'Synced expenses cannot be edited' : 'Edit expense'}
+												class="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
 											>
-												<Pencil class="w-4 h-4" />
+												<Pencil class="w-4 h-4" aria-hidden="true" />
 											</button>
 											<button
 												on:click={() => handleDelete(item.id, item.is_upload === 'Y')}
 												title="Delete Expense"
-												class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+												aria-label="Delete expense"
+												class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
 											>
-												<Trash2 class="w-4 h-4" />
+												<Trash2 class="w-4 h-4" aria-hidden="true" />
 											</button>
 										</div>
 									</td>
@@ -526,8 +528,9 @@
 
 					<div class="flex items-center gap-4">
 						<div class="flex items-center gap-1.5">
-							<span>Per page:</span>
+							<label for="page-size-select">Per page:</label>
 							<select
+								id="page-size-select"
 								bind:value={pageSize}
 								on:change={() => handlePageSizeChange(pageSize)}
 								class="px-2 py-1 bg-background border border-input rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -544,9 +547,10 @@
 								on:click={() => handlePageChange(page - 1)}
 								disabled={page <= 1}
 								title="Previous Page"
-								class="p-1.5 bg-background border border-input hover:bg-secondary rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+								aria-label="Previous page"
+								class="p-2 bg-background border border-input hover:bg-secondary rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
 							>
-								<ChevronLeft class="w-4 h-4" />
+								<ChevronLeft class="w-4 h-4" aria-hidden="true" />
 							</button>
 
 							<span class="px-2 font-medium text-foreground">
@@ -557,9 +561,10 @@
 								on:click={() => handlePageChange(page + 1)}
 								disabled={page >= totalPages}
 								title="Next Page"
-								class="p-1.5 bg-background border border-input hover:bg-secondary rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+								aria-label="Next page"
+								class="p-2 bg-background border border-input hover:bg-secondary rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
 							>
-								<ChevronRight class="w-4 h-4" />
+								<ChevronRight class="w-4 h-4" aria-hidden="true" />
 							</button>
 						</div>
 					</div>

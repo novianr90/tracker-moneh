@@ -132,7 +132,7 @@
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
 				<h2 class="text-md font-bold text-foreground flex items-center gap-2">
-					<DatabaseZap class="w-5 h-5 text-indigo-400" />
+					<DatabaseZap class="w-5 h-5 text-primary" />
 					Actual Budget (Financial System of Record)
 				</h2>
 				<p class="text-xs text-muted-foreground max-w-xl">
@@ -145,15 +145,15 @@
 					Disabled (USE_ACTUAL=false)
 				</span>
 			{:else}
-				<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+				<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
 					<ShieldCheck class="w-4 h-4" /> Active Saga Sync
 				</span>
 			{/if}
 		</div>
 
 		{#if actualStatus.enabled === false}
-			<div class="p-3 text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg flex items-center gap-2">
-				<AlertCircle class="w-4 h-4 text-amber-400 flex-shrink-0" />
+			<div class="p-3 text-xs bg-warning/10 border border-warning/30 text-warning rounded-lg flex items-center gap-2">
+				<AlertCircle class="w-4 h-4 text-warning flex-shrink-0" />
 				<span>Actual Budget transaction synchronization is paused (<code>USE_ACTUAL=false</code>). You can still import/sync Master Data (categories & accounts) anytime below so your dropdowns match Actual Budget.</span>
 			</div>
 		{/if}
@@ -162,46 +162,46 @@
 		<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 			<div class="p-3 bg-secondary/40 border border-border rounded-lg text-center">
 				<span class="text-[11px] text-muted-foreground uppercase font-semibold">Synced</span>
-				<div class="text-xl font-bold text-emerald-400">{actualStatus.synced}</div>
+				<div class="text-xl font-bold text-success">{actualStatus.synced}</div>
 			</div>
 			<div class="p-3 bg-secondary/40 border border-border rounded-lg text-center">
 				<span class="text-[11px] text-muted-foreground uppercase font-semibold">Pending Write</span>
-				<div class="text-xl font-bold text-amber-400">{actualStatus.pending}</div>
+				<div class="text-xl font-bold text-warning">{actualStatus.pending}</div>
 			</div>
 			<div class="p-3 bg-secondary/40 border border-border rounded-lg text-center">
 				<span class="text-[11px] text-muted-foreground uppercase font-semibold">Reconciling</span>
-				<div class="text-xl font-bold text-sky-400">{actualStatus.reconciling}</div>
+				<div class="text-xl font-bold text-info">{actualStatus.reconciling}</div>
 			</div>
 			<div class="p-3 bg-secondary/40 border border-border rounded-lg text-center">
 				<span class="text-[11px] text-muted-foreground uppercase font-semibold">Failed</span>
-				<div class="text-xl font-bold text-rose-400">{actualStatus.failed}</div>
+				<div class="text-xl font-bold text-destructive">{actualStatus.failed}</div>
 			</div>
 		</div>
 
 		{#if actualStatusMsg}
-			<div class="p-3 text-xs bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 rounded-lg flex items-center gap-2">
-				<CheckCircle2 class="w-4 h-4 text-emerald-400 flex-shrink-0" />
+			<div class="p-3 text-xs bg-success/20 border border-success/50 text-success rounded-lg flex items-center gap-2">
+				<CheckCircle2 class="w-4 h-4 text-success flex-shrink-0" />
 				<span>{actualStatusMsg}</span>
 			</div>
 		{/if}
 
 		{#if actualErrorMsg}
 			<div class="p-3 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg flex items-center gap-2">
-				<AlertCircle class="w-4 h-4 text-rose-400 flex-shrink-0" />
+				<AlertCircle class="w-4 h-4 text-destructive-foreground flex-shrink-0" />
 				<span>{actualErrorMsg}</span>
 			</div>
 		{/if}
 
 		{#if masterStatusMsg}
-			<div class="p-3 text-xs bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 rounded-lg flex items-center gap-2">
-				<CheckCircle2 class="w-4 h-4 text-indigo-400 flex-shrink-0" />
+			<div class="p-3 text-xs bg-info/20 border border-info/50 text-info rounded-lg flex items-center gap-2">
+				<CheckCircle2 class="w-4 h-4 text-info flex-shrink-0" />
 				<span>{masterStatusMsg}</span>
 			</div>
 		{/if}
 
 		{#if masterErrorMsg}
 			<div class="p-3 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg flex items-center gap-2">
-				<AlertCircle class="w-4 h-4 text-rose-400 flex-shrink-0" />
+				<AlertCircle class="w-4 h-4 text-destructive-foreground flex-shrink-0" />
 				<span>{masterErrorMsg}</span>
 			</div>
 		{/if}
@@ -214,16 +214,16 @@
 				class="px-5 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground font-semibold text-xs rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 border border-border"
 			>
 				{#if syncingMaster}
-					<Loader2 class="w-4 h-4 animate-spin text-indigo-400" /> Importing Master Data...
+					<Loader2 class="w-4 h-4 animate-spin text-primary" /> Importing Master Data...
 				{:else}
-					<ArrowDownToLine class="w-4 h-4 text-indigo-400" /> Sync Categories & Accounts from Actual
+					<ArrowDownToLine class="w-4 h-4 text-primary" /> Sync Categories & Accounts from Actual
 				{/if}
 			</button>
 
 			<button
 				on:click={handleReconcileActual}
 				disabled={reconcilingActual || actualStatus.enabled === false}
-				class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+				class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
 			>
 				{#if reconcilingActual}
 					<Loader2 class="w-4 h-4 animate-spin" /> Running Reconciliation Engine...
@@ -239,7 +239,7 @@
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
 				<h2 class="text-md font-bold text-foreground flex items-center gap-2">
-					<FileSpreadsheet class="w-5 h-5 text-emerald-400" />
+					<FileSpreadsheet class="w-5 h-5 text-success" />
 					Google Spreadsheet (Reporting & Analytics)
 				</h2>
 				<p class="text-xs text-muted-foreground max-w-xl">
@@ -249,15 +249,15 @@
 		</div>
 
 		{#if sheetsStatusMsg}
-			<div class="p-3 text-xs bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 rounded-lg flex items-center gap-2">
-				<CheckCircle2 class="w-4 h-4 text-emerald-400 flex-shrink-0" />
+			<div class="p-3 text-xs bg-success/20 border border-success/50 text-success rounded-lg flex items-center gap-2">
+				<CheckCircle2 class="w-4 h-4 text-success flex-shrink-0" />
 				<span>{sheetsStatusMsg}</span>
 			</div>
 		{/if}
 
 		{#if sheetsErrorMsg}
 			<div class="p-3 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg flex items-center gap-2">
-				<AlertCircle class="w-4 h-4 text-rose-400 flex-shrink-0" />
+				<AlertCircle class="w-4 h-4 text-destructive-foreground flex-shrink-0" />
 				<span>{sheetsErrorMsg}</span>
 			</div>
 		{/if}
@@ -265,7 +265,7 @@
 		<button
 			on:click={handleTriggerSheetsSync}
 			disabled={syncingSheets}
-			class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+			class="px-6 py-3 bg-success hover:bg-success/90 text-success-foreground font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
 		>
 			{#if syncingSheets}
 				<Loader2 class="w-5 h-5 animate-spin" /> Syncing to Google Spreadsheet...
@@ -312,15 +312,15 @@
 									<td class="p-3 font-medium whitespace-nowrap">{formatDate(log.started_at)}</td>
 									<td class="p-3 whitespace-nowrap">
 										{#if log.status === 'success'}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
 												<CheckCircle2 class="w-3 h-3" /> Success
 											</span>
 										{:else if log.status === 'in_progress'}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-500 border border-sky-500/20">
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
 												<RefreshCw class="w-3 h-3 animate-spin" /> Running
 											</span>
 										{:else}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-destructive/10 text-destructive border border-destructive/20">
 												<XCircle class="w-3 h-3" /> Failed
 											</span>
 										{/if}
@@ -355,7 +355,7 @@
 						<div class="p-3 bg-secondary/30 border border-border rounded-lg space-y-1">
 							<div class="flex items-center justify-between">
 								<span class="text-xs font-bold text-foreground">{job.jobname}</span>
-								<span class="text-[10px] font-mono px-1.5 py-0.5 rounded {job.active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-muted text-muted-foreground'}">
+								<span class="text-[10px] font-mono px-1.5 py-0.5 rounded {job.active ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}">
 									{job.active ? 'Active' : 'Disabled'}
 								</span>
 							</div>

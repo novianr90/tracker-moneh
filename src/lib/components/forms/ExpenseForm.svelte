@@ -5,7 +5,8 @@
 	import { paymentMethodService, type PaymentMethodItem } from '$lib/services/paymentMethods';
 	import { configService } from '$lib/services/config';
 	import { getTodayISODate } from '$lib/utils/formatters';
-	import { Plus, Loader2, Check, Store } from 'lucide-svelte';
+	import { Plus, Check, Store } from 'lucide-svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	const dispatch = createEventDispatcher<{
 		submitted: void;
@@ -32,6 +33,8 @@
 	let loading = false;
 	let errorMsg = '';
 	let successMsg = false;
+	let amountInvalid = false;
+	let categoryInvalid = false;
 
 	async function loadPaymentMethods() {
 		try {
@@ -104,15 +107,19 @@
 
 	async function handleSubmit() {
 		errorMsg = '';
+		amountInvalid = false;
+		categoryInvalid = false;
 		const parsedAmount = parseInt(amount.replace(/\D/g, ''), 10);
 
 		if (!parsedAmount || parsedAmount <= 0) {
 			errorMsg = 'EXP002: Please enter a valid amount > 0';
+			amountInvalid = true;
 			return;
 		}
 
 		if (!categoryId) {
 			errorMsg = 'EXP001: Please select a category';
+			categoryInvalid = true;
 			return;
 		}
 
@@ -155,21 +162,21 @@
 	}
 </script>
 
-<form on:submit|preventDefault={handleSubmit} class="p-6 bg-card border border-border rounded-xl shadow-lg space-y-4">
+<form on:submit|preventDefault={handleSubmit} class="p-6 bg-card border border-border rounded-lg shadow-sm space-y-4">
 	<div class="flex items-center justify-between">
-		<h2 class="text-lg font-bold text-foreground flex items-center gap-2">
-			<Plus class="w-5 h-5 text-primary" />
+		<h2 class="text-lg font-heading font-semibold text-foreground flex items-center gap-2">
+			<Plus class="w-5 h-5 text-primary" aria-hidden="true" />
 			Quick Expense Entry
 		</h2>
 		{#if successMsg}
-			<span class="text-xs font-semibold px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-md flex items-center gap-1">
-				<Check class="w-3 h-3" /> Saved!
+			<span role="status" class="text-xs font-semibold px-2 py-1 bg-success/20 text-success rounded-md flex items-center gap-1">
+				<Check class="w-3 h-3" aria-hidden="true" /> Saved!
 			</span>
 		{/if}
 	</div>
 
 	{#if errorMsg}
-		<div class="p-3 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
+		<div role="alert" class="p-3 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
 			{errorMsg}
 		</div>
 	{/if}
@@ -187,7 +194,8 @@
 					placeholder="50.000"
 					bind:value={amount}
 					required
-					class="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground font-semibold text-lg"
+					aria-invalid={amountInvalid}
+					class="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground font-semibold text-lg tabular-nums"
 				/>
 			</div>
 		</div>
@@ -199,6 +207,7 @@
 				id="category-select"
 				bind:value={categoryId}
 				required
+				aria-invalid={categoryInvalid}
 				class="w-full px-3 py-2.5 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
 			>
 				{#each categories as cat}
@@ -240,24 +249,16 @@
 					<input
 						type="text"
 						placeholder="New method name..."
+						aria-label="New payment method name"
 						bind:value={customMethodName}
 						class="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
 					/>
-					<button
-						type="button"
-						on:click={handleSaveCustomMethod}
-						disabled={savingCustomMethod}
-						class="px-3 py-2 bg-primary text-primary-foreground font-semibold text-xs rounded-lg hover:bg-primary/90 disabled:opacity-50"
-					>
+					<Button type="button" variant="primary" size="sm" loading={savingCustomMethod} on:click={handleSaveCustomMethod}>
 						Add
-					</button>
-					<button
-						type="button"
-						on:click={() => (isAddingCustomMethod = false)}
-						class="px-2 py-2 text-muted-foreground text-xs hover:text-foreground"
-					>
+					</Button>
+					<Button type="button" variant="ghost" size="sm" on:click={() => (isAddingCustomMethod = false)}>
 						Cancel
-					</button>
+					</Button>
 				</div>
 			{:else}
 				<select
@@ -302,17 +303,8 @@
 		</div>
 	</div>
 
-	<button
-		type="submit"
-		disabled={loading}
-		class="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50"
-	>
-		{#if loading}
-			<Loader2 class="w-5 h-5 animate-spin" />
-			Saving...
-		{:else}
-			<Plus class="w-5 h-5" />
-			Save Expense (&lt; 10s)
-		{/if}
-	</button>
+	<Button type="submit" variant="primary" size="md" {loading} class="w-full py-3 font-bold">
+		<Plus slot="icon" class="w-5 h-5" aria-hidden="true" />
+		{loading ? 'Saving...' : 'Save Expense (< 10s)'}
+	</Button>
 </form>

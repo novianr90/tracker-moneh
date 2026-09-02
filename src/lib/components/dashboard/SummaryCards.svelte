@@ -16,7 +16,7 @@
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 	<!-- Total Month Expense -->
-	<div class="p-5 bg-card border border-border rounded-xl shadow-sm space-y-2">
+	<div class="p-5 bg-card border border-border rounded-lg shadow-sm space-y-2">
 		<div class="flex items-center justify-between text-muted-foreground">
 			<span class="text-xs font-medium uppercase tracking-wider">This Month</span>
 			<div class="p-2 bg-primary/10 rounded-lg text-primary">
@@ -28,11 +28,11 @@
 		</div>
 		<div class="flex items-center gap-1.5 text-xs">
 			{#if percentChange > 0}
-				<span class="text-rose-400 font-semibold flex items-center gap-0.5">
+				<span class="text-destructive font-semibold flex items-center gap-0.5">
 					<TrendingUp class="w-3.5 h-3.5" /> +{percentChange}%
 				</span>
 			{:else if percentChange < 0}
-				<span class="text-emerald-400 font-semibold flex items-center gap-0.5">
+				<span class="text-success font-semibold flex items-center gap-0.5">
 					<TrendingDown class="w-3.5 h-3.5" /> {percentChange}%
 				</span>
 			{:else}
@@ -43,7 +43,7 @@
 	</div>
 
 	<!-- Total Transactions -->
-	<div class="p-5 bg-card border border-border rounded-xl shadow-sm space-y-2">
+	<div class="p-5 bg-card border border-border rounded-lg shadow-sm space-y-2">
 		<div class="flex items-center justify-between text-muted-foreground">
 			<span class="text-xs font-medium uppercase tracking-wider">Transactions</span>
 			<div class="p-2 bg-secondary rounded-lg text-foreground">
@@ -57,7 +57,7 @@
 	</div>
 
 	<!-- Previous Month Comparison -->
-	<div class="p-5 bg-card border border-border rounded-xl shadow-sm space-y-2">
+	<div class="p-5 bg-card border border-border rounded-lg shadow-sm space-y-2">
 		<div class="flex items-center justify-between text-muted-foreground">
 			<span class="text-xs font-medium uppercase tracking-wider">Last Month Total</span>
 			<div class="p-2 bg-accent rounded-lg text-accent-foreground">

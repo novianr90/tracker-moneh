@@ -8,7 +8,7 @@
 	$: totalSum = categories.reduce((acc, cat) => acc + cat.total_amount, 0);
 </script>
 
-<div class="p-6 bg-card border border-border rounded-xl shadow-sm space-y-4">
+<div class="p-6 bg-card border border-border rounded-lg shadow-sm space-y-4">
 	<div class="flex items-center justify-between">
 		<h3 class="text-md font-bold text-foreground flex items-center gap-2">
 			<PieChart class="w-5 h-5 text-primary" />
