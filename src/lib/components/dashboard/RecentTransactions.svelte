@@ -2,25 +2,25 @@
 	import { formatIDR, formatDate } from '$lib/utils/formatters';
 	import type { RecentExpenseView } from '$lib/services/expenses';
 	import { ListFilter, ArrowRight } from 'lucide-svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	export let transactions: RecentExpenseView[] = [];
 </script>
 
-<div class="p-6 bg-card border border-border rounded-lg shadow-sm space-y-4">
+<Card class="space-y-4">
 	<div class="flex items-center justify-between">
-		<h3 class="text-md font-bold text-foreground flex items-center gap-2">
-			<ListFilter class="w-5 h-5 text-primary" />
+		<h3 class="text-md font-heading font-bold text-foreground flex items-center gap-2">
+			<ListFilter class="w-5 h-5 text-primary" aria-hidden="true" />
 			Recent Transactions
 		</h3>
 		<a href="/expenses" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-			View All <ArrowRight class="w-3.5 h-3.5" />
+			View All <ArrowRight class="w-3.5 h-3.5" aria-hidden="true" />
 		</a>
 	</div>
 
 	{#if transactions.length === 0}
-		<div class="p-8 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg">
-			No recent transactions. Add your first expense above!
-		</div>
+		<EmptyState icon={ListFilter} message="No recent transactions." hint="Add your first expense above!" />
 	{:else}
 		<div class="divide-y divide-border">
 			{#each transactions as item}
@@ -64,4 +64,4 @@
 			{/each}
 		</div>
 	{/if}
-</div>
+</Card>

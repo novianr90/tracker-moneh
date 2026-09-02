@@ -3,6 +3,8 @@
 	import { expenseService, type DailyTrendPoint } from '$lib/services/expenses';
 	import { formatIDR, formatDate } from '$lib/utils/formatters';
 	import { TrendingUp, Calendar, ArrowUpRight, BarChart2, LineChart as LineChartIcon } from 'lucide-svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	let currentMonthTrends: DailyTrendPoint[] = [];
 	let prevMonthTrends: DailyTrendPoint[] = [];
@@ -88,12 +90,12 @@
 	});
 </script>
 
-<div class="p-6 bg-card border border-border rounded-lg shadow-lg space-y-5">
+<Card class="space-y-5">
 	<!-- Card Header & Controls -->
 	<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
 		<div>
-			<h3 class="text-md font-bold text-foreground flex items-center gap-2">
-				<TrendingUp class="w-5 h-5 text-primary" />
+			<h3 class="text-md font-heading font-bold text-foreground flex items-center gap-2">
+				<TrendingUp class="w-5 h-5 text-primary" aria-hidden="true" />
 				Spending Velocity & Daily Trends
 			</h3>
 			<p class="text-xs text-muted-foreground">Interactive analytics comparing daily spend spikes and cumulative growth</p>
@@ -186,9 +188,7 @@
 			Loading trend analytics...
 		</div>
 	{:else if activeTrends.length === 0}
-		<div class="h-60 flex items-center justify-center text-xs text-muted-foreground border border-dashed border-border rounded-lg">
-			No trend data recorded for selected period.
-		</div>
+		<EmptyState icon={TrendingUp} message="No trend data recorded for selected period." hint="Add an expense to start tracking daily spending trends." />
 	{:else}
 		<div class="relative w-full overflow-hidden bg-background/50 border border-border/80 rounded-xl p-2">
 			<!-- SVG Visualization -->
@@ -350,4 +350,4 @@
 			{/if}
 		</div>
 	{/if}
-</div>
+</Card>

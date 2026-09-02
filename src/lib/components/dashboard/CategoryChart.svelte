@@ -2,25 +2,25 @@
 	import { formatIDR } from '$lib/utils/formatters';
 	import type { CategoryBreakdown } from '$lib/services/expenses';
 	import { PieChart } from 'lucide-svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	export let categories: CategoryBreakdown[] = [];
 
 	$: totalSum = categories.reduce((acc, cat) => acc + cat.total_amount, 0);
 </script>
 
-<div class="p-6 bg-card border border-border rounded-lg shadow-sm space-y-4">
+<Card class="space-y-4">
 	<div class="flex items-center justify-between">
-		<h3 class="text-md font-bold text-foreground flex items-center gap-2">
-			<PieChart class="w-5 h-5 text-primary" />
+		<h3 class="text-md font-heading font-bold text-foreground flex items-center gap-2">
+			<PieChart class="w-5 h-5 text-primary" aria-hidden="true" />
 			Expense by Category
 		</h3>
 		<span class="text-xs font-semibold text-muted-foreground">This Month</span>
 	</div>
 
 	{#if categories.length === 0}
-		<div class="p-8 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg">
-			No expense data recorded for this month.
-		</div>
+		<EmptyState icon={PieChart} message="No expense data recorded for this month." hint="Add an expense to see the category breakdown." />
 	{:else}
 		<div class="space-y-3">
 			{#each categories as cat}
@@ -47,4 +47,4 @@
 			{/each}
 		</div>
 	{/if}
-</div>
+</Card>
