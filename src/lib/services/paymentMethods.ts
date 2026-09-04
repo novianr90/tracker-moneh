@@ -21,5 +21,15 @@ export const paymentMethodService = {
 		await apiFetch(`/api/payment-methods/${id}`, {
 			method: 'DELETE'
 		});
+	},
+
+	async updatePaymentMethod(
+		id: string,
+		payload: { is_credit_card?: boolean }
+	): Promise<PaymentMethodItem> {
+		return await apiFetch(`/api/payment-methods/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(payload)
+		});
 	}
 };
