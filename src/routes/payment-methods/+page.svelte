@@ -67,6 +67,26 @@
 		}
 	}
 
+	async function handleToggleCreditCard(item: PaymentMethodItem) {
+		if (item.id.startsWith('default-')) return;
+
+		const nextValue = !item.is_credit_card;
+		// optimistic update
+		paymentMethods = paymentMethods.map(pm =>
+			pm.id === item.id ? { ...pm, is_credit_card: nextValue } : pm
+		);
+
+		try {
+			await paymentMethodService.updatePaymentMethod(item.id, { is_credit_card: nextValue });
+		} catch (err: any) {
+			// revert on failure
+			paymentMethods = paymentMethods.map(pm =>
+				pm.id === item.id ? { ...pm, is_credit_card: !nextValue } : pm
+			);
+			errorMsg = err.message || 'Failed to update credit card flag';
+		}
+	}
+
 	onMount(() => {
 		loadPaymentMethods();
 	});
@@ -74,6 +94,12 @@
 
 <div class="space-y-6">
 	<PageHeader icon={CreditCard} title="Payment Methods & Wallets" description="Manage custom payment channels, bank accounts, and e-wallets" />
+
+	{#if errorMsg}
+		<div role="alert" class="p-2.5 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
+			{errorMsg}
+		</div>
+	{/if}
 
 	<!-- Info Notice if USE_ACTUAL=true -->
 	{#if useActual}
@@ -94,12 +120,6 @@
 			<h2 class="text-sm font-heading font-semibold text-foreground flex items-center gap-2">
 				<Plus class="w-4 h-4 text-primary" aria-hidden="true" /> Add Custom Payment Method
 			</h2>
-
-			{#if errorMsg}
-				<div role="alert" class="p-2.5 text-xs bg-destructive/20 border border-destructive/50 text-destructive-foreground rounded-lg">
-					{errorMsg}
-				</div>
-			{/if}
 
 			<form on:submit|preventDefault={handleCreatePaymentMethod} class="flex flex-col sm:flex-row gap-3 items-end">
 				<div class="flex-1 w-full">
@@ -147,19 +167,34 @@
 									{#if item.is_active === false}
 										<Badge variant="neutral">Inactive</Badge>
 									{/if}
+									{#if item.is_credit_card}
+										<Badge variant="info">Credit Card</Badge>
+									{/if}
 								</div>
 							</div>
 						</div>
-						{#if !isDefault && !useActual}
+						<div class="flex items-center gap-1 shrink-0">
 							<button
-								on:click={() => handleDelete(item)}
-								title="Delete Payment Method"
-								aria-label={`Delete payment method ${item.name}`}
-								class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
+								on:click={() => handleToggleCreditCard(item)}
+								disabled={isDefault}
+								title={isDefault ? 'Not available on default methods' : item.is_credit_card ? 'Unmark as Credit Card / paylater' : 'Mark as Credit Card / paylater'}
+								aria-pressed={!!item.is_credit_card}
+								aria-label={`Toggle credit card flag for ${item.name}`}
+								class="p-2 rounded-md transition-colors {item.is_credit_card ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'} disabled:opacity-40 disabled:cursor-not-allowed"
 							>
-								<Trash2 class="w-4 h-4" aria-hidden="true" />
+								<CreditCard class="w-4 h-4" aria-hidden="true" />
 							</button>
-						{/if}
+							{#if !isDefault && !useActual}
+								<button
+									on:click={() => handleDelete(item)}
+									title="Delete Payment Method"
+									aria-label={`Delete payment method ${item.name}`}
+									class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
+								>
+									<Trash2 class="w-4 h-4" aria-hidden="true" />
+								</button>
+							{/if}
+						</div>
 					</div>
 				{/each}
 			</div>

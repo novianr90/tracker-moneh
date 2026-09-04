@@ -138,6 +138,7 @@ export interface Database {
           user_id: string
           name: string
           is_active: boolean
+          is_credit_card: boolean
           created_at: string
         }
         Insert: {
@@ -145,6 +146,7 @@ export interface Database {
           user_id: string
           name: string
           is_active?: boolean
+          is_credit_card?: boolean
           created_at?: string
         }
         Update: {
@@ -152,6 +154,7 @@ export interface Database {
           user_id?: string
           name?: string
           is_active?: boolean
+          is_credit_card?: boolean
           created_at?: string
         }
       }
